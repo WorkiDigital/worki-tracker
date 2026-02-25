@@ -669,25 +669,28 @@ const TrackingService = {
   // NOVOS DADOS PARA GRÁFICOS
   // ═══════════════════════════════════════
   async getDashboardGraphs(filters = {}) {
-    let where = 'WHERE 1=1';
+    let where = 'WHERE v.1=1';
     const params = [];
 
     if (filters.start) {
       params.push(filters.start);
-      where += ` AND first_seen >= $${params.length}`;
+      where += ` AND v.first_seen >= $${params.length}`;
     }
     if (filters.end) {
       params.push(filters.end);
-      where += ` AND first_seen <= $${params.length}`;
+      where += ` AND v.first_seen <= $${params.length}`;
     }
     if (filters.source) {
       params.push(filters.source === 'direto' ? null : filters.source);
-      where += filters.source === 'direto' ? ` AND first_utm_source IS NULL` : ` AND first_utm_source = $${params.length}`;
+      where += filters.source === 'direto' ? ` AND v.first_utm_source IS NULL` : ` AND v.first_utm_source = $${params.length}`;
     }
     if (filters.device) {
       params.push(filters.device);
-      where += ` AND device_type = $${params.length}`;
+      where += ` AND v.device_type = $${params.length}`;
     }
+
+    // Compensar índice dos parâmetros para o gráfico de linha ($1 e $2 são start/end)
+    const graphWhere = where.replace(/\$(\d+)/g, (match, p1) => `$${parseInt(p1) + 2}`);
 
     // 1. TimeSeries: Últimos 15 dias (ou Range do Filtro)
     const timeSeries = await db.many(`
