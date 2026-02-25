@@ -609,7 +609,7 @@ const TrackingService = {
     }
     if (filters.end) {
       params.push(filters.end);
-      where.push(`first_seen <= $${i++}`);
+      where.push(`first_seen::date <= $${i++}`);
     }
     if (filters.source) {
       params.push(filters.source === 'direto' ? null : filters.source);
@@ -703,7 +703,7 @@ const TrackingService = {
     }
     if (filters.end) {
       params.push(filters.end);
-      where += ` AND v.first_seen <= $${params.length}`;
+      where += ` AND v.first_seen::date <= $${params.length}`;
     }
     if (filters.source) {
       if (filters.source === 'direto') {

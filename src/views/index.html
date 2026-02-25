@@ -903,11 +903,11 @@
           <thead>
             <tr>
               <th>Lead</th>
+              <th>Entrada</th>
               <th>Contato</th>
               <th>Origem</th>
               <th>Meta</th>
-              <th>Páginas</th>
-              <th>WhatsApp</th>
+              <th>Última Atividade</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -1098,6 +1098,13 @@
         const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
         const name = l.name || l.visitor_id.substring(0, 16) + '...';
 
+        // Formatação de datas
+        const fDate = l.first_seen ? new Date(l.first_seen) : null;
+        const lDate = l.last_seen ? new Date(l.last_seen) : null;
+
+        const fStr = fDate ? `<b>${fDate.toLocaleDateString('pt-BR')}</b><br><small>${fDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>` : '—';
+        const lStr = lDate ? `${lDate.toLocaleDateString('pt-BR')} ${lDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '—';
+
         // Contato: email + instagram na mesma célula
         let contactHtml = '';
         if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
@@ -1116,11 +1123,11 @@
 
         return `<tr onclick="openJourney('${l.visitor_id}')">
       <td><span class="lead-name">${esc(name)}</span><br><span class="lead-sub">${esc(sub)}</span></td>
+      <td><span class="date-cell">${fStr}</span></td>
       <td>${contactHtml}</td>
       <td><span class="source-tag ${srcClass}">${esc(srcLabel)}</span></td>
       <td>${metaHtml}</td>
-      <td>${l.total_pageviews || 0}</td>
-      <td>${l.whatsapp_contacted ? '✅' : '—'}</td>
+      <td><span class="date-sub">${lStr}</span><br><small>${l.total_pageviews || 0} pgs ${l.whatsapp_contacted ? '• ✅ WA' : ''}</small></td>
       <td><span class="status-badge ${stClass}"><span class="status-dot"></span>${stLabel}</span></td>
     </tr>`;
       }).join('');
