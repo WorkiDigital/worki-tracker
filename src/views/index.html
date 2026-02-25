@@ -8,6 +8,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
     rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg: #0a0a0f;
@@ -711,7 +712,13 @@
 <body>
 
   <div class="topbar">
-    <h1>// WORKI TRACKER v2.0</h1>
+    <div style="display:flex; align-items:center; gap:32px;">
+      <h1>// WORKI TRACKER v2.0</h1>
+      <nav class="filters" style="margin:0;">
+        <button class="filter-btn active" id="tab-leads" onclick="switchTab('leads')">📋 Leads</button>
+        <button class="filter-btn" id="tab-charts" onclick="switchTab('charts')">📊 Gráficos</button>
+      </nav>
+    </div>
     <div class="status">
       <div class="dot-live"></div> Live Tracking
     </div>
@@ -753,144 +760,169 @@
     </div>
 
     <!-- Leads Table -->
-    <div class="panel">
-      <div class="panel-header">
-        <h2>Leads</h2>
-        <div class="filters">
-          <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">Todos</button>
-          <button class="filter-btn" data-status="visiting" onclick="filterStatus(this)">Visitando</button>
-          <button class="filter-btn" data-status="identified" onclick="filterStatus(this)">Identificados</button>
-          <button class="filter-btn" data-status="converted" onclick="filterStatus(this)">Convertidos</button>
-          <input type="text" class="search-input" placeholder="Buscar nome, email, @instagram..."
-            oninput="searchLeads(this.value)">
+    <div id="view-leads" class="tab-view">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>Leads</h2>
+          <div class="filters">
+            <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">Todos</button>
+            <button class="filter-btn" data-status="visiting" onclick="filterStatus(this)">Visitando</button>
+            <button class="filter-btn" data-status="identified" onclick="filterStatus(this)">Identificados</button>
+            <button class="filter-btn" data-status="converted" onclick="filterStatus(this)">Convertidos</button>
+            <input type="text" class="search-input" placeholder="Buscar nome, email, @instagram..."
+              oninput="searchLeads(this.value)">
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Lead</th>
+              <th>Contato</th>
+              <th>Origem</th>
+              <th>Meta</th>
+              <th>Páginas</th>
+              <th>WhatsApp</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="leads-body">
+            <tr>
+              <td colspan="7" class="loading">Carregando...</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+      <!-- Charts View -->
+      <div id="view-charts" class="tab-view" style="display:none;">
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:20px;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Crescimento (15 dias)</h2>
+            </div>
+            <div style="padding:20px; height:350px;"><canvas id="chart-growth"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Dispositivos</h2>
+            </div>
+            <div style="padding:20px; height:350px;"><canvas id="chart-devices"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Principais Fontes</h2>
+          </div>
+          <div style="padding:20px; height:300px;"><canvas id="chart-sources"></canvas></div>
         </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Lead</th>
-            <th>Contato</th>
-            <th>Origem</th>
-            <th>Meta</th>
-            <th>Páginas</th>
-            <th>WhatsApp</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="leads-body">
-          <tr>
-            <td colspan="7" class="loading">Carregando...</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="pagination" id="pagination"></div>
     </div>
-  </div>
 
-  <!-- Journey Modal -->
-  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
-    <div class="modal">
-      <div class="modal-header">
-        <h2 id="modal-title">Jornada do Lead</h2>
-        <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
-      </div>
-      <div class="modal-body" id="modal-body">
-        <div class="loading">Carregando...</div>
+    <!-- Journey Modal -->
+    <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-title">Jornada do Lead</h2>
+          <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <div class="loading">Carregando...</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    // ═══════════════════════════════════════
-    // CONFIG
-    // ═══════════════════════════════════════
-    const API_BASE = window.location.origin + '/api/dashboard';
-    const API_KEY = prompt('Digite sua API Key:') || '';
+    <script>
+      // ═══════════════════════════════════════
+      // CONFIG
+      // ═══════════════════════════════════════
+      const API_BASE = window.location.origin + '/api/dashboard';
+      const API_KEY = prompt('Digite sua API Key:') || '';
 
-    const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
+      const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
 
-    let currentPage = 1;
-    let currentStatus = 'all';
-    let searchQuery = '';
-    let searchTimeout = null;
+      let currentPage = 1;
+      let currentStatus = 'all';
+      let searchQuery = '';
+      let searchTimeout = null;
 
-    // ═══════════════════════════════════════
-    // FETCH HELPERS
-    // ═══════════════════════════════════════
-    async function api(path) {
-      const res = await fetch(API_BASE + path, { headers });
-      if (!res.ok) throw new Error(`API Error: ${res.status}`);
-      return res.json();
-    }
-
-    // ═══════════════════════════════════════
-    // LOAD STATS
-    // ═══════════════════════════════════════
-    async function loadStats() {
-      try {
-        const s = await api('/stats');
-        document.getElementById('s-visitors').textContent = Number(s.total_visitors).toLocaleString('pt-BR');
-        document.getElementById('s-visitors-sub').textContent = `${s.active_7d} ativos (7d)`;
-        document.getElementById('s-identified').textContent = Number(s.identified_leads).toLocaleString('pt-BR');
-        document.getElementById('s-identified-sub').textContent = `${s.whatsapp_contacts} via WhatsApp`;
-        document.getElementById('s-conversions').textContent = Number(s.conversions).toLocaleString('pt-BR');
-        document.getElementById('s-conversions-sub').textContent = `${s.conversion_rate || 0}% taxa`;
-        document.getElementById('s-revenue').textContent = 'R$ ' + Number(s.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        document.getElementById('s-revenue-sub').textContent = `Média ${s.avg_days_to_convert || '—'} dias p/ converter`;
-        document.getElementById('s-instagram').textContent = Number(s.with_instagram || 0).toLocaleString('pt-BR');
-        document.getElementById('s-meta').textContent = Number(s.from_meta_ads || 0).toLocaleString('pt-BR');
-      } catch (e) { console.error('Stats error:', e); }
-    }
-
-    // ═══════════════════════════════════════
-    // LOAD LEADS
-    // ═══════════════════════════════════════
-    async function loadLeads() {
-      try {
-        const params = new URLSearchParams({
-          page: currentPage, limit: 25,
-          ...(currentStatus !== 'all' && { status: currentStatus }),
-          ...(searchQuery && { search: searchQuery })
-        });
-        const data = await api('/leads?' + params);
-        renderLeads(data.leads);
-        renderPagination(data.total, data.page, data.limit);
-      } catch (e) {
-        document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar. Verifique a API Key.</td></tr>';
-      }
-    }
-
-    function renderLeads(leads) {
-      const tbody = document.getElementById('leads-body');
-      if (!leads.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lead encontrado</td></tr>';
-        return;
+      // ═══════════════════════════════════════
+      // FETCH HELPERS
+      // ═══════════════════════════════════════
+      async function api(path) {
+        const res = await fetch(API_BASE + path, { headers });
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
+        return res.json();
       }
 
-      tbody.innerHTML = leads.map(l => {
-        const srcClass = getSourceClass(l.first_utm_source);
-        const srcLabel = l.first_utm_source || 'direto';
-        const stClass = 'st-' + (l.status || 'visiting');
-        const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
-        const name = l.name || l.visitor_id.substring(0, 16) + '...';
+      // ═══════════════════════════════════════
+      // LOAD STATS
+      // ═══════════════════════════════════════
+      async function loadStats() {
+        try {
+          const s = await api('/stats');
+          document.getElementById('s-visitors').textContent = Number(s.total_visitors).toLocaleString('pt-BR');
+          document.getElementById('s-visitors-sub').textContent = `${s.active_7d} ativos (7d)`;
+          document.getElementById('s-identified').textContent = Number(s.identified_leads).toLocaleString('pt-BR');
+          document.getElementById('s-identified-sub').textContent = `${s.whatsapp_contacts} via WhatsApp`;
+          document.getElementById('s-conversions').textContent = Number(s.conversions).toLocaleString('pt-BR');
+          document.getElementById('s-conversions-sub').textContent = `${s.conversion_rate || 0}% taxa`;
+          document.getElementById('s-revenue').textContent = 'R$ ' + Number(s.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+          document.getElementById('s-revenue-sub').textContent = `Média ${s.avg_days_to_convert || '—'} dias p/ converter`;
+          document.getElementById('s-instagram').textContent = Number(s.with_instagram || 0).toLocaleString('pt-BR');
+          document.getElementById('s-meta').textContent = Number(s.from_meta_ads || 0).toLocaleString('pt-BR');
+        } catch (e) { console.error('Stats error:', e); }
+      }
 
-        // Contato: email + instagram na mesma célula
-        let contactHtml = '';
-        if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
-        if (l.instagram) contactHtml += `<br><span class="lead-ig">${esc(l.instagram)}</span>`;
-        if (!l.email && !l.instagram && l.phone) contactHtml += `<span class="lead-sub">${esc(l.phone)}</span>`;
-        if (!contactHtml) contactHtml = '<span class="lead-sub">—</span>';
+      // ═══════════════════════════════════════
+      // LOAD LEADS
+      // ═══════════════════════════════════════
+      async function loadLeads() {
+        try {
+          const params = new URLSearchParams({
+            page: currentPage, limit: 25,
+            ...(currentStatus !== 'all' && { status: currentStatus }),
+            ...(searchQuery && { search: searchQuery })
+          });
+          const data = await api('/leads?' + params);
+          renderLeads(data.leads);
+          renderPagination(data.total, data.page, data.limit);
+        } catch (e) {
+          document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar. Verifique a API Key.</td></tr>';
+        }
+      }
 
-        // Sub info do lead
-        const sub = l.phone || l.device_type || '';
+      function renderLeads(leads) {
+        const tbody = document.getElementById('leads-body');
+        if (!leads.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lead encontrado</td></tr>';
+          return;
+        }
 
-        // Meta badge
-        const hasMeta = l.fbclid || l.fbc;
-        const metaHtml = hasMeta
-          ? '<span class="meta-badge has-meta">● Meta</span>'
-          : '<span class="meta-badge no-meta">—</span>';
+        tbody.innerHTML = leads.map(l => {
+          const srcClass = getSourceClass(l.first_utm_source);
+          const srcLabel = l.first_utm_source || 'direto';
+          const stClass = 'st-' + (l.status || 'visiting');
+          const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
+          const name = l.name || l.visitor_id.substring(0, 16) + '...';
 
-        return `<tr onclick="openJourney('${l.visitor_id}')">
+          // Contato: email + instagram na mesma célula
+          let contactHtml = '';
+          if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
+          if (l.instagram) contactHtml += `<br><span class="lead-ig">${esc(l.instagram)}</span>`;
+          if (!l.email && !l.instagram && l.phone) contactHtml += `<span class="lead-sub">${esc(l.phone)}</span>`;
+          if (!contactHtml) contactHtml = '<span class="lead-sub">—</span>';
+
+          // Sub info do lead
+          const sub = l.phone || l.device_type || '';
+
+          // Meta badge
+          const hasMeta = l.fbclid || l.fbc;
+          const metaHtml = hasMeta
+            ? '<span class="meta-badge has-meta">● Meta</span>'
+            : '<span class="meta-badge no-meta">—</span>';
+
+          return `<tr onclick="openJourney('${l.visitor_id}')">
       <td><span class="lead-name">${esc(name)}</span><br><span class="lead-sub">${esc(sub)}</span></td>
       <td>${contactHtml}</td>
       <td><span class="source-tag ${srcClass}">${esc(srcLabel)}</span></td>
@@ -899,35 +931,35 @@
       <td>${l.whatsapp_contacted ? '✅' : '—'}</td>
       <td><span class="status-badge ${stClass}"><span class="status-dot"></span>${stLabel}</span></td>
     </tr>`;
-      }).join('');
-    }
-
-    function renderPagination(total, page, limit) {
-      const pages = Math.ceil(total / limit);
-      const el = document.getElementById('pagination');
-      if (pages <= 1) { el.innerHTML = ''; return; }
-
-      let html = '';
-      for (let i = 1; i <= Math.min(pages, 10); i++) {
-        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+        }).join('');
       }
-      el.innerHTML = html;
-    }
 
-    // ═══════════════════════════════════════
-    // JOURNEY MODAL
-    // ═══════════════════════════════════════
-    async function openJourney(visitorId) {
-      document.getElementById('modal').classList.add('open');
-      document.getElementById('modal-body').innerHTML = '<div class="loading">Carregando jornada...</div>';
+      function renderPagination(total, page, limit) {
+        const pages = Math.ceil(total / limit);
+        const el = document.getElementById('pagination');
+        if (pages <= 1) { el.innerHTML = ''; return; }
 
-      try {
-        const j = await api('/leads/' + encodeURIComponent(visitorId) + '/journey');
-        const v = j.visitor;
+        let html = '';
+        for (let i = 1; i <= Math.min(pages, 10); i++) {
+          html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+        }
+        el.innerHTML = html;
+      }
 
-        document.getElementById('modal-title').textContent = v.name || v.visitor_id;
+      // ═══════════════════════════════════════
+      // JOURNEY MODAL
+      // ═══════════════════════════════════════
+      async function openJourney(visitorId) {
+        document.getElementById('modal').classList.add('open');
+        document.getElementById('modal-body').innerHTML = '<div class="loading">Carregando jornada...</div>';
 
-        let html = `<div class="lead-info-grid">
+        try {
+          const j = await api('/leads/' + encodeURIComponent(visitorId) + '/journey');
+          const v = j.visitor;
+
+          document.getElementById('modal-title').textContent = v.name || v.visitor_id;
+
+          let html = `<div class="lead-info-grid">
       <div class="info-box"><div class="info-label">Nome</div><div class="info-value">${v.name || '—'}</div></div>
       <div class="info-box"><div class="info-label">Telefone</div><div class="info-value">${v.phone || '—'}</div></div>
       <div class="info-box"><div class="info-label">Email</div><div class="info-value">${v.email || '—'}</div></div>
@@ -939,48 +971,48 @@
       <div class="info-box"><div class="info-label">Conversão</div><div class="info-value">${v.converted ? 'R$ ' + Number(v.conversion_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}</div></div>
     </div>`;
 
-        // Meta Ads Section (só mostra se tem dados)
-        if (v.fbclid || v.fbc || v.fbp) {
-          html += '<div class="section-title">🔗 Meta Ads Tracking</div>';
-          html += '<div class="lead-info-grid">';
-          if (v.fbclid) html += `<div class="info-box"><div class="info-label">FBCLID</div><div class="info-value meta-link">${v.fbclid.substring(0, 30)}...</div></div>`;
-          if (v.fbc) html += `<div class="info-box"><div class="info-label">FBC (Click ID)</div><div class="info-value meta-link">${v.fbc.substring(0, 30)}...</div></div>`;
-          if (v.fbp) html += `<div class="info-box"><div class="info-label">FBP (Browser ID)</div><div class="info-value meta-link">${v.fbp}</div></div>`;
-          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-          html += '</div>';
-        }
+          // Meta Ads Section (só mostra se tem dados)
+          if (v.fbclid || v.fbc || v.fbp) {
+            html += '<div class="section-title">🔗 Meta Ads Tracking</div>';
+            html += '<div class="lead-info-grid">';
+            if (v.fbclid) html += `<div class="info-box"><div class="info-label">FBCLID</div><div class="info-value meta-link">${v.fbclid.substring(0, 30)}...</div></div>`;
+            if (v.fbc) html += `<div class="info-box"><div class="info-label">FBC (Click ID)</div><div class="info-value meta-link">${v.fbc.substring(0, 30)}...</div></div>`;
+            if (v.fbp) html += `<div class="info-box"><div class="info-label">FBP (Browser ID)</div><div class="info-value meta-link">${v.fbp}</div></div>`;
+            if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
+            html += '</div>';
+          }
 
-        // Localização (só mostra se tem)
-        if (v.city || v.state || v.country || v.zip_code || v.client_ip) {
-          html += '<div class="section-title">📍 Localização e IP</div>';
-          html += '<div class="lead-info-grid">';
-          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-          if (v.city) html += `<div class="info-box"><div class="info-label">Cidade</div><div class="info-value">${v.city}</div></div>`;
-          if (v.state) html += `<div class="info-box"><div class="info-label">Estado</div><div class="info-value">${v.state}</div></div>`;
-          if (v.zip_code) html += `<div class="info-box"><div class="info-label">CEP</div><div class="info-value">${v.zip_code}</div></div>`;
-          if (v.country) html += `<div class="info-box"><div class="info-label">País</div><div class="info-value">${v.country}</div></div>`;
-          html += '</div>';
-        }
+          // Localização (só mostra se tem)
+          if (v.city || v.state || v.country || v.zip_code || v.client_ip) {
+            html += '<div class="section-title">📍 Localização e IP</div>';
+            html += '<div class="lead-info-grid">';
+            if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
+            if (v.city) html += `<div class="info-box"><div class="info-label">Cidade</div><div class="info-value">${v.city}</div></div>`;
+            if (v.state) html += `<div class="info-box"><div class="info-label">Estado</div><div class="info-value">${v.state}</div></div>`;
+            if (v.zip_code) html += `<div class="info-box"><div class="info-label">CEP</div><div class="info-value">${v.zip_code}</div></div>`;
+            if (v.country) html += `<div class="info-box"><div class="info-label">País</div><div class="info-value">${v.country}</div></div>`;
+            html += '</div>';
+          }
 
-        // Device
-        html += '<div class="section-title">📱 Dispositivo</div>';
-        html += `<div class="lead-info-grid">
+          // Device
+          html += '<div class="section-title">📱 Dispositivo</div>';
+          html += `<div class="lead-info-grid">
       <div class="info-box"><div class="info-label">Tipo</div><div class="info-value">${v.device_type || '—'}</div></div>
       <div class="info-box"><div class="info-label">OS</div><div class="info-value">${v.device_os || '—'}</div></div>
       <div class="info-box"><div class="info-label">Browser</div><div class="info-value">${v.device_browser || '—'}</div></div>
       <div class="info-box"><div class="info-label">Tela</div><div class="info-value">${v.device_screen || '—'}</div></div>
     </div>`;
 
-        // Timeline
-        html += '<div class="section-title">📋 Timeline</div>';
-        const events = j.events.filter(e => e.event_type !== 'heartbeat');
-        html += '<div class="timeline">';
-        events.forEach(e => {
-          const d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data || {});
-          const time = new Date(e.created_at).toLocaleString('pt-BR');
-          const { label, detail } = formatEvent(e.event_type, d, e.page);
+          // Timeline
+          html += '<div class="section-title">📋 Timeline</div>';
+          const events = j.events.filter(e => e.event_type !== 'heartbeat');
+          html += '<div class="timeline">';
+          events.forEach(e => {
+            const d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data || {});
+            const time = new Date(e.created_at).toLocaleString('pt-BR');
+            const { label, detail } = formatEvent(e.event_type, d, e.page);
 
-          html += `<div class="tl-item tl-${e.event_type}">
+            html += `<div class="tl-item tl-${e.event_type}">
         <div class="tl-dot"></div>
         <div class="tl-content">
           <div class="tl-time">${time}</div>
@@ -988,80 +1020,192 @@
           ${detail ? `<div class="tl-detail">${detail}</div>` : ''}
         </div>
       </div>`;
+          });
+          html += '</div>';
+
+          document.getElementById('modal-body').innerHTML = html;
+        } catch (e) {
+          document.getElementById('modal-body').innerHTML = '<div class="empty-state">Erro ao carregar jornada</div>';
+        }
+      }
+
+      function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+      function formatEvent(type, data, page) {
+        switch (type) {
+          case 'pageview':
+            return { label: `Visitou ${page || '/'}`, detail: data.utm?.source ? `Via ${data.utm.source}` + (data.utm.campaign ? ` (${data.utm.campaign})` : '') : data.referrer ? `Referrer: ${data.referrer}` : 'Tráfego direto' };
+          case 'click':
+            if (data.type === 'whatsapp_click') return { label: '📱 Clicou no WhatsApp', detail: `Número: ${data.phone || '—'}` };
+            if (data.type === 'phone_click') return { label: '📞 Clicou no telefone', detail: data.phone };
+            return { label: `Clicou: ${data.text || data.id || data.tag}`, detail: data.href || '' };
+          case 'scroll': return { label: `Scroll ${data.depth}`, detail: '' };
+          case 'form_submit':
+            const fields = Object.entries(data.fields || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+            return { label: '📝 Enviou formulário', detail: fields };
+          case 'identify':
+            return { label: '🏷️ Identificado', detail: `${data.name || ''} ${data.email || ''} ${data.phone || ''} ${data.instagram || ''}`.trim() };
+          case 'conversion': return { label: `🎯 CONVERSÃO${data.source ? ' — via ' + data.source : ''}`, detail: data.value ? `R$ ${Number(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` + (data.product ? ` — ${data.product}` : '') : '' };
+          case 'whatsapp_contact':
+            let waDetail = `${data.pushName || ''}: "${(data.message || '').substring(0, 80)}"`;
+            if (data.ctwaClid) waDetail += ' 🔗 Meta Ad';
+            return { label: '💬 Contato via WhatsApp', detail: waDetail };
+          case 'page_exit': return { label: '🚪 Saiu da página', detail: `Tempo: ${data.time_on_page || 0}s` };
+          case 'exit_intent': return { label: '⚠️ Intenção de saída', detail: '' };
+          case 'visibility': return { label: data.state === 'hidden' ? '👁️ Trocou de aba' : '👁️ Voltou à aba', detail: '' };
+          default: return { label: type, detail: JSON.stringify(data).substring(0, 100) };
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // HELPERS
+      // ═══════════════════════════════════════
+      function getSourceClass(src) {
+        if (!src) return 'src-direct';
+        const s = src.toLowerCase();
+        if (s.includes('instagram')) return 'src-instagram';
+        if (s.includes('facebook') || s.includes('meta') || s.includes('fb')) return 'src-facebook';
+        if (s.includes('google')) return 'src-google';
+        if (s.includes('whatsapp')) return 'src-whatsapp';
+        return 'src-other';
+      }
+
+      function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+      function filterStatus(btn) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentStatus = btn.dataset.status;
+        currentPage = 1;
+        loadLeads();
+      }
+
+      function searchLeads(q) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => { searchQuery = q; currentPage = 1; loadLeads(); }, 300);
+      }
+
+      function goPage(p) { currentPage = p; loadLeads(); }
+
+      // ═══════════════════════════════════════
+      // TABS
+      // ═══════════════════════════════════════
+      async function switchTab(tab) {
+        document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+        document.getElementById('view-' + tab).style.display = 'block';
+
+        document.getElementById('tab-leads').classList.remove('active');
+        document.getElementById('tab-charts').classList.remove('active');
+        document.getElementById('tab-' + tab).classList.add('active');
+
+        if (tab === 'charts') loadCharts();
+      }
+
+      // ═══════════════════════════════════════
+      // CHARTS
+      // ═══════════════════════════════════════
+      let charts = {};
+
+      async function loadCharts() {
+        try {
+          const data = await api('/graphs');
+          renderGrowthChart(data.timeSeries);
+          renderDeviceChart(data.devices);
+          renderSourceChart(data.sources);
+        } catch (e) { console.error('Charts error:', e); }
+      }
+
+      function renderGrowthChart(ts) {
+        if (charts.growth) charts.growth.destroy();
+        const ctx = document.getElementById('chart-growth').getContext('2d');
+        charts.growth = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ts.map(d => d.date),
+            datasets: [
+              {
+                label: 'Novos Visitantes',
+                data: ts.map(d => d.new_visitors),
+                borderColor: '#00d4aa',
+                backgroundColor: 'rgba(0,212,170,0.1)',
+                fill: true, tension: 0.4, borderWidth: 3
+              },
+              {
+                label: 'Pageviews',
+                data: ts.map(d => d.pageviews),
+                borderColor: '#42a5f5',
+                backgroundColor: 'rgba(66,165,245,0.05)',
+                fill: true, tension: 0.4, borderWidth: 2, borderDash: [5, 5]
+              }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#9898b0', font: { family: 'DM Sans' } } } },
+            scales: {
+              y: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
+              x: { grid: { display: false }, ticks: { color: '#686880' } }
+            }
+          }
         });
-        html += '</div>';
-
-        document.getElementById('modal-body').innerHTML = html;
-      } catch (e) {
-        document.getElementById('modal-body').innerHTML = '<div class="empty-state">Erro ao carregar jornada</div>';
       }
-    }
 
-    function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-    function formatEvent(type, data, page) {
-      switch (type) {
-        case 'pageview':
-          return { label: `Visitou ${page || '/'}`, detail: data.utm?.source ? `Via ${data.utm.source}` + (data.utm.campaign ? ` (${data.utm.campaign})` : '') : data.referrer ? `Referrer: ${data.referrer}` : 'Tráfego direto' };
-        case 'click':
-          if (data.type === 'whatsapp_click') return { label: '📱 Clicou no WhatsApp', detail: `Número: ${data.phone || '—'}` };
-          if (data.type === 'phone_click') return { label: '📞 Clicou no telefone', detail: data.phone };
-          return { label: `Clicou: ${data.text || data.id || data.tag}`, detail: data.href || '' };
-        case 'scroll': return { label: `Scroll ${data.depth}`, detail: '' };
-        case 'form_submit':
-          const fields = Object.entries(data.fields || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
-          return { label: '📝 Enviou formulário', detail: fields };
-        case 'identify':
-          return { label: '🏷️ Identificado', detail: `${data.name || ''} ${data.email || ''} ${data.phone || ''} ${data.instagram || ''}`.trim() };
-        case 'conversion': return { label: `🎯 CONVERSÃO${data.source ? ' — via ' + data.source : ''}`, detail: data.value ? `R$ ${Number(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` + (data.product ? ` — ${data.product}` : '') : '' };
-        case 'whatsapp_contact':
-          let waDetail = `${data.pushName || ''}: "${(data.message || '').substring(0, 80)}"`;
-          if (data.ctwaClid) waDetail += ' 🔗 Meta Ad';
-          return { label: '💬 Contato via WhatsApp', detail: waDetail };
-        case 'page_exit': return { label: '🚪 Saiu da página', detail: `Tempo: ${data.time_on_page || 0}s` };
-        case 'exit_intent': return { label: '⚠️ Intenção de saída', detail: '' };
-        case 'visibility': return { label: data.state === 'hidden' ? '👁️ Trocou de aba' : '👁️ Voltou à aba', detail: '' };
-        default: return { label: type, detail: JSON.stringify(data).substring(0, 100) };
+      function renderDeviceChart(devs) {
+        if (charts.devices) charts.devices.destroy();
+        const ctx = document.getElementById('chart-devices').getContext('2d');
+        charts.devices = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: devs.map(d => d.label),
+            datasets: [{
+              data: devs.map(d => d.value),
+              backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc'],
+              borderWidth: 0, hoverOffset: 10
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: '#9898b0', padding: 20 } }
+            },
+            cutout: '70%'
+          }
+        });
       }
-    }
 
-    // ═══════════════════════════════════════
-    // HELPERS
-    // ═══════════════════════════════════════
-    function getSourceClass(src) {
-      if (!src) return 'src-direct';
-      const s = src.toLowerCase();
-      if (s.includes('instagram')) return 'src-instagram';
-      if (s.includes('facebook') || s.includes('meta') || s.includes('fb')) return 'src-facebook';
-      if (s.includes('google')) return 'src-google';
-      if (s.includes('whatsapp')) return 'src-whatsapp';
-      return 'src-other';
-    }
+      function renderSourceChart(srcs) {
+        if (charts.sources) charts.sources.destroy();
+        const ctx = document.getElementById('chart-sources').getContext('2d');
+        charts.sources = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: srcs.map(s => s.label),
+            datasets: [{
+              label: 'Lead por Origem',
+              data: srcs.map(s => s.value),
+              backgroundColor: '#00d4aa',
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
+              y: { grid: { display: false }, ticks: { color: '#9898b0' } }
+            }
+          }
+        });
+      }
 
-    function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-
-    function filterStatus(btn) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentStatus = btn.dataset.status;
-      currentPage = 1;
+      // ═══════════════════════════════════════
+      // INIT
+      // ═══════════════════════════════════════
+      loadStats();
       loadLeads();
-    }
-
-    function searchLeads(q) {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => { searchQuery = q; currentPage = 1; loadLeads(); }, 300);
-    }
-
-    function goPage(p) { currentPage = p; loadLeads(); }
-
-    // ═══════════════════════════════════════
-    // INIT
-    // ═══════════════════════════════════════
-    loadStats();
-    loadLeads();
-    setInterval(loadStats, 30000);
-  </script>
+      setInterval(loadStats, 30000);
+    </script>
 </body>
 
 </html>

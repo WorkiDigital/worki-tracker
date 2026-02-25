@@ -607,7 +607,7 @@ const TrackingService = {
   },
 
   async getTopSources() {
-    return db.many(`
+    const s = await db.many(`
       SELECT 
         COALESCE(first_utm_source, 'direto') as source,
         COUNT(*) as visitors,
@@ -618,6 +618,52 @@ const TrackingService = {
       ORDER BY visitors DESC
       LIMIT 10
     `);
+    return s;
+  },
+
+  // ═══════════════════════════════════════
+  // NOVOS DADOS PARA GRÁFICOS
+  // ═══════════════════════════════════════
+  async getDashboardGraphs() {
+    // 1. TimeSeries: Últimos 15 dias (Pageviews e Novos Visitantes)
+    const timeSeries = await db.many(`
+      WITH RECURSIVE days AS (
+        SELECT CURRENT_DATE - INTERVAL '14 days' as day
+        UNION ALL
+        SELECT day + INTERVAL '1 day' FROM days WHERE day < CURRENT_DATE
+      )
+      SELECT 
+        TO_CHAR(days.day, 'DD/MM') as date,
+        COUNT(v.id) as new_visitors,
+        (SELECT COUNT(*) FROM events e WHERE e.event_type = 'pageview' AND e.created_at::date = days.day) as pageviews
+      FROM days
+      LEFT JOIN visitors v ON v.first_seen::date = days.day
+      GROUP BY days.day
+      ORDER BY days.day ASC
+    `);
+
+    // 2. Distribuição por Dispositivo
+    const devices = await db.many(`
+      SELECT 
+        COALESCE(device_type, 'outro') as label,
+        COUNT(*) as value
+      FROM visitors
+      GROUP BY device_type
+      ORDER BY value DESC
+    `);
+
+    // 3. Top Fontes (Formatado para gráfico)
+    const sources = await db.many(`
+      SELECT 
+        COALESCE(first_utm_source, 'direto') as label,
+        COUNT(*) as value
+      FROM visitors
+      GROUP BY label
+      ORDER BY value DESC
+      LIMIT 6
+    `);
+
+    return { timeSeries, devices, sources };
   }
 };
 

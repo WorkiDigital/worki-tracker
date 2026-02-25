@@ -100,4 +100,18 @@ router.post('/leads/:visitorId/convert', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════
+// GET /api/dashboard/graphs
+// Dados consolidados para gráficos
+// ═══════════════════════════════════════
+router.get('/graphs', async (req, res) => {
+  try {
+    const data = await TrackingService.getDashboardGraphs();
+    res.json(data);
+  } catch (err) {
+    console.error('Erro /dashboard/graphs:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 module.exports = router;
