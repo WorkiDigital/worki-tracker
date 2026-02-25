@@ -738,7 +738,7 @@ const TrackingService = {
         FROM events e 
         JOIN visitors v ON v.visitor_id = e.visitor_id
         ${where.replace('v.first_seen', 'e.created_at')} 
-        WHERE e.event_type = 'pageview'
+        AND e.event_type = 'pageview'
         GROUP BY 1
       )
       SELECT 
