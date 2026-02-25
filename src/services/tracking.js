@@ -694,7 +694,7 @@ const TrackingService = {
   // NOVOS DADOS PARA GRÁFICOS
   // ═══════════════════════════════════════
   async getDashboardGraphs(filters = {}) {
-    let where = 'WHERE v.1=1';
+    let where = 'WHERE 1=1';
     const params = [];
 
     if (filters.start) {
@@ -726,8 +726,8 @@ const TrackingService = {
       )
       SELECT 
         TO_CHAR(days.day, 'DD/MM') as date,
-        (SELECT COUNT(*) FROM visitors v ${graphWhere.replace('v.1=1', 'v.first_seen::date = days.day')}) as new_visitors,
-        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${graphWhere.replace('v.1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
+        (SELECT COUNT(*) FROM visitors v ${graphWhere.replace('1=1', 'v.first_seen::date = days.day')}) as new_visitors,
+        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${graphWhere.replace('1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
       FROM days
       ORDER BY days.day ASC
     `, [filters.start || null, filters.end || null, ...params]);
