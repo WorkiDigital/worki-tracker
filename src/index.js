@@ -43,8 +43,17 @@ const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'admin123';
 
 // Security headers
 app.use(helmet({
-  contentSecurityPolicy: false, // Permitir carregar scripts/CSS de CDN no dashboard
+  contentSecurityPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
+
+// Logger de debug para Tracking
+app.use((req, res, next) => {
+  if (req.url.startsWith('/api/track')) {
+    console.log(`📡 [INCOMING] ${req.method} ${req.url} | Origin: ${req.headers.origin || 'N/A'} | IP: ${req.ip}`);
+  }
+  next();
+});
 
 // Compressão
 app.use(compression());

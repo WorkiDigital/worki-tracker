@@ -14,6 +14,8 @@ router.post('/events', async (req, res) => {
       return res.status(400).json({ error: 'Nenhum evento recebido' });
     }
 
+    console.log(`📝 [TRACK] Recebidos ${events.length} eventos do Visitor: ${events[0].visitor_id || 'ID Desconhecido'}`);
+
     if (events.length > 50) {
       return res.status(400).json({ error: 'Máximo 50 eventos por request' });
     }
