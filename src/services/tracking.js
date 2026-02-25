@@ -604,7 +604,7 @@ const TrackingService = {
     const safeSort = allowedSorts.includes(sort) ? sort : 'last_seen';
     const safeOrder = order === 'ASC' ? 'ASC' : 'DESC';
 
-    const leads = await db.manyOrNone(
+    const leads = await db.many(
       `SELECT * FROM visitors ${whereClause}
        ORDER BY ${safeSort} ${safeOrder}
        LIMIT $${i++} OFFSET $${i++}`,
@@ -690,7 +690,7 @@ const TrackingService = {
     }
 
     // 1. TimeSeries: Últimos 15 dias (ou Range do Filtro)
-    const timeSeries = await db.manyOrNone(`
+    const timeSeries = await db.many(`
       WITH RECURSIVE days AS (
         SELECT COALESCE($1::date, CURRENT_DATE - INTERVAL '14 days') as day
         UNION ALL
@@ -705,7 +705,7 @@ const TrackingService = {
     `, [filters.start || null, filters.end || null, ...params]);
 
     // 2. Distribuição por Dispositivo
-    const devices = await db.manyOrNone(`
+    const devices = await db.many(`
       SELECT 
         COALESCE(device_type, 'outro') as label,
         COUNT(*) as value
@@ -716,7 +716,7 @@ const TrackingService = {
     `, params);
 
     // 3. Top Fontes
-    const sources = await db.manyOrNone(`
+    const sources = await db.many(`
       SELECT 
         COALESCE(first_utm_source, 'direto') as label,
         COUNT(*) as value
@@ -738,7 +738,7 @@ const TrackingService = {
     `, params);
 
     // 5. Localização
-    const locations = await db.manyOrNone(`
+    const locations = await db.many(`
       SELECT 
         COALESCE(city, 'Desconhecido') as city,
         COALESCE(state, '??') as state,

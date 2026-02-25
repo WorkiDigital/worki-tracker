@@ -14,6 +14,9 @@ const dashboardRoutes = require('./routes/dashboard');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Proxy (necessário para rate-limit atrás de Nginx/EasyPanel)
+app.set('trust proxy', 1);
+
 // ═══════════════════════════════════════
 // MIDDLEWARE
 // ═══════════════════════════════════════
