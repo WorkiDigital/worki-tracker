@@ -244,6 +244,14 @@ const TrackingService = {
        WHERE visitor_id = $9`,
       [name, email, phone, empresa, instagram, city, state, zip_code, event.visitor_id]
     );
+
+    // Sync with Meta CAPI (Lead)
+    try {
+      const visitor = await this.getVisitor(event.visitor_id);
+      await metaService.sendEvent('Lead', visitor, { url: event.url });
+    } catch (e) {
+      console.error('[CAPI] Trigger error:', e);
+    }
   },
 
   // ═══════════════════════════════════════
