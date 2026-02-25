@@ -7,25 +7,11 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-const trackRoutes = require('./routes/track');
-const webhookRoutes = require('./routes/webhook');
-const dashboardRoutes = require('./routes/dashboard');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Trust Proxy (necessário para rate-limit atrás de Nginx/EasyPanel)
 app.set('trust proxy', 1);
-
-// ═══════════════════════════════════════
-// MIDDLEWARE
-// ═══════════════════════════════════════
-
-// Segurança
-app.use(helmet({
-  contentSecurityPolicy: false, // Dashboard usa inline scripts
-  crossOriginResourcePolicy: { policy: 'cross-origin' }
-}));
 
 const trackRoutes = require('./routes/track');
 const dashboardRoutes = require('./routes/dashboard');
