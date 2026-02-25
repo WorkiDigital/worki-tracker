@@ -857,20 +857,19 @@ const TrackingService = {
   // DELETAR TODOS OS LEADS (RESET TOTAL)
   // ═══════════════════════════════════════
   async deleteAllLeads() {
-    await db.query('BEGIN');
+    const client = await db.pool.connect();
     try {
-      // Limpa todas as tabelas relacionadas ao rastreamento
-      await db.query('DELETE FROM conversions');
-      await db.query('DELETE FROM whatsapp_messages');
-      await db.query('DELETE FROM events');
-      await db.query('DELETE FROM sessions');
-      await db.query('DELETE FROM visitors');
-
-      await db.query('COMMIT');
+      await client.query('BEGIN');
+      await client.query("SET LOCAL statement_timeout = '30s'");
+      // TRUNCATE é muito mais rápido que DELETE para limpar tabelas inteiras
+      await client.query('TRUNCATE conversions, whatsapp_messages, events, sessions, visitors CASCADE');
+      await client.query('COMMIT');
       return { success: true };
     } catch (err) {
-      await db.query('ROLLBACK');
+      await client.query('ROLLBACK');
       throw err;
+    } finally {
+      client.release();
     }
   }
 };
