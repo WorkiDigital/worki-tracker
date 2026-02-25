@@ -40,7 +40,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('CORS bloqueado'));
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
   allowedHeaders: ['Content-Type', 'X-API-Key', 'X-Webhook-Secret'],
 }));
 
