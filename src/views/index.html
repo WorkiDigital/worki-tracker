@@ -928,6 +928,7 @@
         document.getElementById('modal-title').textContent = v.name || v.visitor_id;
 
         let html = `<div class="lead-info-grid">
+      <div class="info-box"><div class="info-label">Nome</div><div class="info-value">${v.name || '—'}</div></div>
       <div class="info-box"><div class="info-label">Telefone</div><div class="info-value">${v.phone || '—'}</div></div>
       <div class="info-box"><div class="info-label">Email</div><div class="info-value">${v.email || '—'}</div></div>
       <div class="info-box"><div class="info-label">Instagram</div><div class="info-value ig">${v.instagram || '—'}</div></div>
