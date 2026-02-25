@@ -1,0 +1,540 @@
+const db = require('../db');
+
+const TrackingService = {
+
+  // ═══════════════════════════════════════
+  // PROCESSAR BATCH DE EVENTOS
+  // ═══════════════════════════════════════
+  async processEvents(events) {
+    const results = { processed: 0, errors: 0 };
+
+    for (const event of events) {
+      try {
+        // 1. Garantir que o visitor existe
+        await this.upsertVisitor(event);
+
+        // 2. Salvar evento
+        await db.query(
+          `INSERT INTO events (visitor_id, session_id, event_type, page, url, data)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [event.visitor_id, event.session_id, event.event, event.page, event.url, JSON.stringify(event.data || {})]
+        );
+
+        // 3. Processar por tipo
+        switch (event.event) {
+          case 'pageview':
+            await this.processPageview(event);
+            break;
+          case 'scroll':
+            await this.processScroll(event);
+            break;
+          case 'click':
+            await this.processClick(event);
+            break;
+          case 'form_submit':
+            await this.processFormSubmit(event);
+            break;
+          case 'identify':
+            await this.processIdentify(event);
+            break;
+          case 'conversion':
+            await this.processConversion(event);
+            break;
+          case 'page_exit':
+            await this.processPageExit(event);
+            break;
+        }
+
+        results.processed++;
+      } catch (err) {
+        console.error(`Erro processando evento ${event.event}:`, err.message);
+        results.errors++;
+      }
+    }
+
+    return results;
+  },
+
+  // ═══════════════════════════════════════
+  // UPSERT VISITOR
+  // ═══════════════════════════════════════
+  async upsertVisitor(event) {
+    const existing = await db.one(
+      'SELECT id, total_visits FROM visitors WHERE visitor_id = $1',
+      [event.visitor_id]
+    );
+
+    if (!existing) {
+      const utm = event.data?.utm || {};
+      const device = event.data?.device || {};
+
+      await db.query(
+        `INSERT INTO visitors (visitor_id, fingerprint, first_utm_source, first_utm_medium, 
+         first_utm_campaign, first_referrer, device_type, device_os, device_browser, device_screen)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         ON CONFLICT (visitor_id) DO NOTHING`,
+        [
+          event.visitor_id, event.fingerprint,
+          utm.source, utm.medium, utm.campaign, event.data?.referrer,
+          device.type, device.os, device.browser, device.screen
+        ]
+      );
+    } else {
+      await db.query(
+        'UPDATE visitors SET last_seen = NOW(), updated_at = NOW() WHERE visitor_id = $1',
+        [event.visitor_id]
+      );
+    }
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR PAGEVIEW
+  // ═══════════════════════════════════════
+  async processPageview(event) {
+    const utm = event.data?.utm || {};
+
+    // Upsert session
+    await db.query(
+      `INSERT INTO sessions (session_id, visitor_id, utm_source, utm_medium, utm_campaign, 
+       utm_term, utm_content, referrer, device_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (session_id) DO UPDATE SET pageviews = sessions.pageviews + 1`,
+      [
+        event.session_id, event.visitor_id,
+        utm.source, utm.medium, utm.campaign, utm.term, utm.content,
+        event.data?.referrer, event.data?.device?.type
+      ]
+    );
+
+    // Incrementar pageviews do visitor
+    await db.query(
+      `UPDATE visitors SET 
+        total_pageviews = total_pageviews + 1,
+        last_seen = NOW(),
+        status = CASE 
+          WHEN total_visits > 1 AND status = 'visiting' THEN 'returning'
+          ELSE status 
+        END
+       WHERE visitor_id = $1`,
+      [event.visitor_id]
+    );
+
+    // Verificar se é nova sessão (nova visita)
+    const sessionCount = await db.one(
+      'SELECT COUNT(DISTINCT session_id) as count FROM sessions WHERE visitor_id = $1',
+      [event.visitor_id]
+    );
+
+    if (sessionCount) {
+      await db.query(
+        'UPDATE visitors SET total_visits = $1 WHERE visitor_id = $2',
+        [parseInt(sessionCount.count), event.visitor_id]
+      );
+    }
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR SCROLL
+  // ═══════════════════════════════════════
+  async processScroll(event) {
+    const depth = parseInt(event.data?.depth) || 0;
+    await db.query(
+      'UPDATE visitors SET max_scroll_depth = GREATEST(max_scroll_depth, $1) WHERE visitor_id = $2',
+      [depth, event.visitor_id]
+    );
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR CLICK
+  // ═══════════════════════════════════════
+  async processClick(event) {
+    // Se clicou no WhatsApp, registrar
+    if (event.data?.type === 'whatsapp_click' && event.data?.phone) {
+      await db.query(
+        `UPDATE visitors SET 
+          whatsapp_contacted = TRUE,
+          whatsapp_date = COALESCE(whatsapp_date, NOW()),
+          phone = COALESCE(phone, $1)
+         WHERE visitor_id = $2`,
+        [event.data.phone, event.visitor_id]
+      );
+    }
+
+    // Se clicou no telefone, salvar número
+    if (event.data?.type === 'phone_click' && event.data?.phone) {
+      await db.query(
+        'UPDATE visitors SET phone = COALESCE(phone, $1) WHERE visitor_id = $2',
+        [event.data.phone.replace(/\D/g, ''), event.visitor_id]
+      );
+    }
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR FORM SUBMIT
+  // ═══════════════════════════════════════
+  async processFormSubmit(event) {
+    const fields = event.data?.fields || {};
+
+    const name = fields.nome || fields.name || null;
+    const email = fields.email || null;
+    const phone = (fields.telefone || fields.phone || fields.tel || fields.whatsapp || fields.celular || '').replace(/\D/g, '') || null;
+    const empresa = fields.empresa || null;
+
+    await db.query(
+      `UPDATE visitors SET 
+        name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        empresa = COALESCE($4, empresa),
+        status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
+        updated_at = NOW()
+       WHERE visitor_id = $5`,
+      [name, email, phone, empresa, event.visitor_id]
+    );
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR IDENTIFY
+  // ═══════════════════════════════════════
+  async processIdentify(event) {
+    const d = event.data || {};
+    await db.query(
+      `UPDATE visitors SET 
+        name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        empresa = COALESCE($4, empresa),
+        status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
+        updated_at = NOW()
+       WHERE visitor_id = $5`,
+      [d.name, d.email, d.phone?.replace(/\D/g, ''), d.empresa, event.visitor_id]
+    );
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR CONVERSÃO
+  // ═══════════════════════════════════════
+  async processConversion(event) {
+    const d = event.data || {};
+
+    // Registrar conversão
+    await db.query(
+      `INSERT INTO conversions (visitor_id, source, value, product, payment, data)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [event.visitor_id, d.source, d.value, d.product, d.payment, JSON.stringify(d)]
+    );
+
+    // Atualizar visitor
+    const visitor = await db.one('SELECT first_seen FROM visitors WHERE visitor_id = $1', [event.visitor_id]);
+    const daysToConvert = visitor
+      ? Math.ceil((Date.now() - new Date(visitor.first_seen).getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    await db.query(
+      `UPDATE visitors SET 
+        converted = TRUE,
+        conversion_value = $1,
+        conversion_source = $2,
+        conversion_date = NOW(),
+        days_to_convert = $3,
+        status = 'converted',
+        updated_at = NOW()
+       WHERE visitor_id = $4`,
+      [d.value || 0, d.source, daysToConvert, event.visitor_id]
+    );
+  },
+
+  // ═══════════════════════════════════════
+  // PROCESSAR SAÍDA DA PÁGINA
+  // ═══════════════════════════════════════
+  async processPageExit(event) {
+    const timeOnPage = event.data?.time_on_page || 0;
+    await db.query(
+      `UPDATE visitors SET 
+        total_time_seconds = total_time_seconds + $1,
+        updated_at = NOW()
+       WHERE visitor_id = $2`,
+      [timeOnPage, event.visitor_id]
+    );
+
+    // Atualizar sessão
+    if (event.session_id) {
+      await db.query(
+        `UPDATE sessions SET 
+          ended_at = NOW(),
+          duration_seconds = duration_seconds + $1
+         WHERE session_id = $2`,
+        [timeOnPage, event.session_id]
+      );
+    }
+  },
+
+  // ═══════════════════════════════════════
+  // MATCH — Vincular conversão externa
+  // ═══════════════════════════════════════
+  async matchConversion({ phone, email, source, value, product, payment, data }) {
+    // Normalizar telefone
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
+
+    // Buscar visitor por telefone ou email
+    let visitor = null;
+
+    if (cleanPhone) {
+      visitor = await db.one(
+        'SELECT visitor_id, first_seen FROM visitors WHERE phone = $1 ORDER BY last_seen DESC LIMIT 1',
+        [cleanPhone]
+      );
+    }
+
+    if (!visitor && email) {
+      visitor = await db.one(
+        'SELECT visitor_id, first_seen FROM visitors WHERE email = $1 ORDER BY last_seen DESC LIMIT 1',
+        [email]
+      );
+    }
+
+    // Se não encontrou por dados do visitor, tenta por WhatsApp messages
+    if (!visitor && cleanPhone) {
+      const waMsg = await db.one(
+        'SELECT visitor_id FROM whatsapp_messages WHERE phone = $1 AND visitor_id IS NOT NULL ORDER BY created_at DESC LIMIT 1',
+        [cleanPhone]
+      );
+      if (waMsg) {
+        visitor = await db.one(
+          'SELECT visitor_id, first_seen FROM visitors WHERE visitor_id = $1',
+          [waMsg.visitor_id]
+        );
+      }
+    }
+
+    if (!visitor) {
+      return { matched: false, reason: 'Nenhum visitante encontrado com esse telefone/email' };
+    }
+
+    // Registrar conversão
+    const daysToConvert = Math.ceil(
+      (Date.now() - new Date(visitor.first_seen).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    await db.query(
+      `INSERT INTO conversions (visitor_id, source, value, product, payment, data)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [visitor.visitor_id, source, value, product, payment, JSON.stringify(data || {})]
+    );
+
+    await db.query(
+      `UPDATE visitors SET 
+        converted = TRUE,
+        conversion_value = $1,
+        conversion_source = $2,
+        conversion_date = NOW(),
+        days_to_convert = $3,
+        status = 'converted',
+        updated_at = NOW()
+       WHERE visitor_id = $4`,
+      [value || 0, source, daysToConvert, visitor.visitor_id]
+    );
+
+    // Salvar evento na timeline
+    await db.query(
+      `INSERT INTO events (visitor_id, event_type, data)
+       VALUES ($1, 'conversion', $2)`,
+      [visitor.visitor_id, JSON.stringify({ source, value, product, payment, matched: true })]
+    );
+
+    return {
+      matched: true,
+      visitor_id: visitor.visitor_id,
+      days_to_convert: daysToConvert
+    };
+  },
+
+  // ═══════════════════════════════════════
+  // WEBHOOK WHATSAPP (Evolution API)
+  // ═══════════════════════════════════════
+  async processWhatsAppWebhook(payload) {
+    const data = payload.data || payload;
+    const key = data.key || {};
+    const remoteJid = key.remoteJid || '';
+    const fromMe = key.fromMe || false;
+
+    // Extrair número de telefone
+    const phone = remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+    if (!phone || phone.length < 8) return { processed: false, reason: 'Número inválido' };
+
+    const pushName = data.pushName || null;
+    const message = data.message?.conversation
+      || data.message?.extendedTextMessage?.text
+      || '[mídia]';
+
+    // Salvar mensagem
+    await db.query(
+      `INSERT INTO whatsapp_messages (phone, push_name, message, from_me, raw_data)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [phone, pushName, message, fromMe, JSON.stringify(payload)]
+    );
+
+    // Tentar fazer match com visitor
+    // 1. Por telefone no visitors
+    let visitor = await db.one(
+      'SELECT visitor_id FROM visitors WHERE phone = $1 ORDER BY last_seen DESC LIMIT 1',
+      [phone]
+    );
+
+    // 2. Por clique no WhatsApp (evento com esse número)
+    if (!visitor) {
+      const clickEvent = await db.one(
+        `SELECT visitor_id FROM events 
+         WHERE event_type = 'click' AND data->>'phone' = $1
+         ORDER BY created_at DESC LIMIT 1`,
+        [phone]
+      );
+      if (clickEvent) visitor = clickEvent;
+    }
+
+    if (visitor) {
+      // Vincular mensagem ao visitor
+      await db.query(
+        'UPDATE whatsapp_messages SET visitor_id = $1, matched = TRUE WHERE phone = $2 AND visitor_id IS NULL',
+        [visitor.visitor_id, phone]
+      );
+
+      // Atualizar visitor
+      await db.query(
+        `UPDATE visitors SET 
+          whatsapp_contacted = TRUE,
+          whatsapp_date = COALESCE(whatsapp_date, NOW()),
+          name = COALESCE(name, $1),
+          phone = COALESCE(phone, $2),
+          updated_at = NOW()
+         WHERE visitor_id = $3`,
+        [pushName, phone, visitor.visitor_id]
+      );
+
+      // Evento na timeline
+      await db.query(
+        `INSERT INTO events (visitor_id, event_type, data)
+         VALUES ($1, 'whatsapp_contact', $2)`,
+        [visitor.visitor_id, JSON.stringify({ phone, pushName, message: message.substring(0, 200), fromMe })]
+      );
+
+      return { processed: true, matched: true, visitor_id: visitor.visitor_id };
+    }
+
+    return { processed: true, matched: false, phone };
+  },
+
+  // ═══════════════════════════════════════
+  // CONSULTAS — Dashboard
+  // ═══════════════════════════════════════
+  async getStats() {
+    const stats = await db.one(`
+      SELECT
+        COUNT(*) as total_visitors,
+        COUNT(*) FILTER (WHERE last_seen > NOW() - INTERVAL '7 days') as active_7d,
+        COUNT(*) FILTER (WHERE converted = TRUE) as conversions,
+        COALESCE(SUM(conversion_value) FILTER (WHERE converted = TRUE), 0) as total_revenue,
+        ROUND(AVG(days_to_convert) FILTER (WHERE converted = TRUE), 1) as avg_days_to_convert,
+        ROUND(
+          COUNT(*) FILTER (WHERE converted = TRUE)::numeric / 
+          NULLIF(COUNT(*), 0) * 100, 1
+        ) as conversion_rate,
+        COUNT(*) FILTER (WHERE whatsapp_contacted = TRUE) as whatsapp_contacts,
+        COUNT(*) FILTER (WHERE status = 'identified') as identified_leads
+      FROM visitors
+    `);
+
+    const weekStats = await db.one(`
+      SELECT
+        COUNT(*) FILTER (WHERE first_seen > NOW() - INTERVAL '7 days') as new_this_week,
+        COUNT(*) FILTER (WHERE first_seen > NOW() - INTERVAL '14 days' AND first_seen <= NOW() - INTERVAL '7 days') as new_last_week
+      FROM visitors
+    `);
+
+    return { ...stats, ...weekStats };
+  },
+
+  async getLeads({ page = 1, limit = 50, status, search, sort = 'last_seen', order = 'DESC' }) {
+    const offset = (page - 1) * limit;
+    let where = [];
+    let params = [];
+    let i = 1;
+
+    if (status && status !== 'all') {
+      where.push(`status = $${i++}`);
+      params.push(status);
+    }
+
+    if (search) {
+      where.push(`(name ILIKE $${i} OR email ILIKE $${i} OR phone ILIKE $${i} OR empresa ILIKE $${i})`);
+      params.push(`%${search}%`);
+      i++;
+    }
+
+    const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
+    const allowedSorts = ['last_seen', 'first_seen', 'total_visits', 'total_pageviews', 'conversion_value'];
+    const safeSort = allowedSorts.includes(sort) ? sort : 'last_seen';
+    const safeOrder = order === 'ASC' ? 'ASC' : 'DESC';
+
+    const leads = await db.many(
+      `SELECT * FROM visitors ${whereClause}
+       ORDER BY ${safeSort} ${safeOrder}
+       LIMIT $${i++} OFFSET $${i++}`,
+      [...params, limit, offset]
+    );
+
+    const total = await db.one(
+      `SELECT COUNT(*) as count FROM visitors ${whereClause}`,
+      params
+    );
+
+    return { leads, total: parseInt(total.count), page, limit };
+  },
+
+  async getLeadJourney(visitorId) {
+    const visitor = await db.one(
+      'SELECT * FROM visitors WHERE visitor_id = $1',
+      [visitorId]
+    );
+
+    if (!visitor) return null;
+
+    const events = await db.many(
+      'SELECT * FROM events WHERE visitor_id = $1 ORDER BY created_at ASC',
+      [visitorId]
+    );
+
+    const sessions = await db.many(
+      'SELECT * FROM sessions WHERE visitor_id = $1 ORDER BY started_at ASC',
+      [visitorId]
+    );
+
+    const conversions = await db.many(
+      'SELECT * FROM conversions WHERE visitor_id = $1 ORDER BY created_at ASC',
+      [visitorId]
+    );
+
+    const whatsappMessages = await db.many(
+      'SELECT * FROM whatsapp_messages WHERE visitor_id = $1 ORDER BY created_at ASC',
+      [visitorId]
+    );
+
+    return { visitor, events, sessions, conversions, whatsappMessages };
+  },
+
+  async getTopSources() {
+    return db.many(`
+      SELECT 
+        COALESCE(first_utm_source, 'direto') as source,
+        COUNT(*) as visitors,
+        COUNT(*) FILTER (WHERE converted = TRUE) as conversions,
+        COALESCE(SUM(conversion_value) FILTER (WHERE converted = TRUE), 0) as revenue
+      FROM visitors
+      GROUP BY COALESCE(first_utm_source, 'direto')
+      ORDER BY visitors DESC
+      LIMIT 10
+    `);
+  }
+};
+
+module.exports = TrackingService;
