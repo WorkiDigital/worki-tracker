@@ -775,9 +775,11 @@
     <div class="filter-group">
       <label>Período</label>
       <select id="filter-range" onchange="handleRangeChange()">
-        <option value="7d">Últimos 7 dias</option>
-        <option value="15d">Últimos 15 dias</option>
-        <option value="30d" selected>Últimos 30 dias</option>
+        <option value="0">Hoje</option>
+        <option value="1">Ontem</option>
+        <option value="7">Últimos 7 dias</option>
+        <option value="15">Últimos 15 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
         <option value="custom">Personalizado...</option>
       </select>
       <div id="custom-range" style="display:none; gap:10px; align-items:center;">
@@ -960,9 +962,18 @@
 
         if (range !== 'custom') {
           const d = new Date();
-          end = d.toISOString().split('T')[0];
-          d.setDate(d.getDate() - parseInt(range));
-          start = d.toISOString().split('T')[0];
+          const today = d.toISOString().split('T')[0];
+
+          if (range === '0') { // Hoje
+            start = end = today;
+          } else if (range === '1') { // Ontem
+            d.setDate(d.getDate() - 1);
+            start = end = d.toISOString().split('T')[0];
+          } else { // Presets (7, 15, 30...)
+            end = today;
+            d.setDate(d.getDate() - parseInt(range));
+            start = d.toISOString().split('T')[0];
+          }
         }
 
         return {
@@ -979,7 +990,7 @@
       }
 
       function resetFilters() {
-        document.getElementById('filter-range').value = '30d';
+        document.getElementById('filter-range').value = '30';
         document.getElementById('filter-source').value = '';
         document.getElementById('filter-device').value = '';
         handleRangeChange();
