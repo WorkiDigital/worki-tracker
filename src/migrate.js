@@ -158,6 +158,28 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
 );
 
 -- ═══════════════════════════════════════════
+-- UPGRADE SCHEMA (Garante colunas v2 para bancos legados)
+-- ═══════════════════════════════════════════
+
+-- Visitors
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS instagram VARCHAR(100);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS fbclid TEXT;
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS fbc TEXT;
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS fbp TEXT;
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS client_ip VARCHAR(50);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS client_user_agent TEXT;
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS city VARCHAR(100);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS state VARCHAR(50);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS country VARCHAR(10);
+
+-- Sessions
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fbc TEXT;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fbp TEXT;
+
+-- WhatsApp Messages
+ALTER TABLE whatsapp_messages ADD COLUMN IF NOT EXISTS ctwa_clid TEXT;
+
+-- ═══════════════════════════════════════════
 -- ÍNDICES para performance
 -- ═══════════════════════════════════════════
 
@@ -189,7 +211,7 @@ CREATE INDEX IF NOT EXISTS idx_whatsapp_ctwa ON whatsapp_messages(ctwa_clid);
 
 async function migrate() {
   console.log('🔄 Rodando migração...\n');
-  
+
   try {
     await pool.query(migration);
     console.log('✅ Tabelas criadas com sucesso:');
