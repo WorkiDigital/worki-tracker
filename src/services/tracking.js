@@ -538,13 +538,13 @@ const TrackingService = {
     let where = 'WHERE 1=1';
     const params = [];
 
-    if (filters.start) {
+    if (filters.start && filters.start !== '') {
       params.push(filters.start);
-      where += ` AND first_seen >= $${params.length}`;
+      where += ` AND first_seen >= $${params.length}::timestamp`;
     }
-    if (filters.end) {
+    if (filters.end && filters.end !== '') {
       params.push(filters.end);
-      where += ` AND first_seen <= $${params.length}`;
+      where += ` AND first_seen::date <= $${params.length}::date`;
     }
     if (filters.source) {
       params.push(filters.source === 'direto' ? null : filters.source);
@@ -603,13 +603,13 @@ const TrackingService = {
     }
 
     // Filtros globais
-    if (filters.start) {
+    if (filters.start && filters.start !== '') {
       params.push(filters.start);
-      where.push(`first_seen >= $${i++}`);
+      where.push(`first_seen >= $${i++}::timestamp`);
     }
-    if (filters.end) {
+    if (filters.end && filters.end !== '') {
       params.push(filters.end);
-      where.push(`first_seen::date <= $${i++}`);
+      where.push(`first_seen::date <= $${i++}::date`);
     }
     if (filters.source) {
       params.push(filters.source === 'direto' ? null : filters.source);
@@ -697,13 +697,13 @@ const TrackingService = {
     let where = 'WHERE 1=1';
     const params = [];
 
-    if (filters.start) {
+    if (filters.start && filters.start !== '') {
       params.push(filters.start);
-      where += ` AND v.first_seen >= $${params.length}`;
+      where += ` AND v.first_seen >= $${params.length}::timestamp`;
     }
-    if (filters.end) {
+    if (filters.end && filters.end !== '') {
       params.push(filters.end);
-      where += ` AND v.first_seen::date <= $${params.length}`;
+      where += ` AND v.first_seen::date <= $${params.length}::date`;
     }
     if (filters.source) {
       if (filters.source === 'direto') {
@@ -724,12 +724,12 @@ const TrackingService = {
     // 1. TimeSeries: Série de dias
     const timeSeries = await db.many(`
       WITH days AS (
-        SELECT day::date as day 
+        SELECT d::date as day 
         FROM generate_series(
           COALESCE($1::timestamp, CURRENT_DATE - INTERVAL '14 days'),
           COALESCE($2::timestamp, CURRENT_DATE),
           '1 day'::interval
-        ) day
+        ) AS d
       ),
       daily_visitors AS (
         SELECT v.first_seen::date as day, COUNT(*) as count 
