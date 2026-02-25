@@ -750,7 +750,7 @@ const TrackingService = {
         COUNT(*) as value
       FROM visitors v
       ${where}
-      GROUP BY label
+      GROUP BY 1
       ORDER BY value DESC
       LIMIT 10
     `, params);
@@ -773,7 +773,7 @@ const TrackingService = {
         COUNT(*) as value
       FROM visitors v
       ${where}
-      GROUP BY city, state
+      GROUP BY 1, 2
       ORDER BY value DESC
       LIMIT 10
     `, params);
