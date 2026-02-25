@@ -718,10 +718,7 @@ const TrackingService = {
       where += ` AND v.device_type = $${params.length}`;
     }
 
-    // Compensar índice dos parâmetros para o gráfico de linha ($1 e $2 são start/end)
-    const graphWhere = where.replace(/\$(\d+)/g, (match, p1) => `$${parseInt(p1) + 2}`);
-
-    // 1. TimeSeries: Série de dias usando generate_series
+    // 1. TimeSeries: Série de dias
     const timeSeries = await db.many(`
       WITH days AS (
         SELECT generate_series(
@@ -729,12 +726,28 @@ const TrackingService = {
           COALESCE($2::date, CURRENT_DATE),
           '1 day'
         )::date as day
+      ),
+      daily_visitors AS (
+        SELECT first_seen::date as day, COUNT(*) as count 
+        FROM visitors v 
+        ${where} 
+        GROUP BY 1
+      ),
+      daily_views AS (
+        SELECT e.created_at::date as day, COUNT(*) as count 
+        FROM events e 
+        JOIN visitors v ON v.visitor_id = e.visitor_id
+        ${where.replace('v.first_seen', 'e.created_at')} 
+        WHERE e.event_type = 'pageview'
+        GROUP BY 1
       )
       SELECT 
         TO_CHAR(days.day, 'DD/MM') as date,
-        (SELECT COUNT(*) FROM visitors v ${graphWhere.replace('1=1', 'v.first_seen::date = days.day')}) as new_visitors,
-        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${graphWhere.replace('1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
+        COALESCE(dv.count, 0) as new_visitors,
+        COALESCE(dw.count, 0) as pageviews
       FROM days
+      LEFT JOIN daily_visitors dv ON dv.day = days.day
+      LEFT JOIN daily_views dw ON dw.day = days.day
       ORDER BY days.day ASC
     `, [filters.start || null, filters.end || null, ...params]);
 
