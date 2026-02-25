@@ -227,6 +227,7 @@ const TrackingService = {
     );
     const city = fields.cidade || fields.city || null;
     const state = fields.estado || fields.state || fields.uf || null;
+    const zip_code = fields.cep || fields.zip || fields.postal_code || fields.zip_code || null;
 
     await db.query(
       `UPDATE visitors SET 
@@ -237,10 +238,11 @@ const TrackingService = {
         instagram = COALESCE($5, instagram),
         city = COALESCE($6, city),
         state = COALESCE($7, state),
+        zip_code = COALESCE($8, zip_code),
         status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
         updated_at = NOW()
-       WHERE visitor_id = $8`,
-      [name, email, phone, empresa, instagram, city, state, event.visitor_id]
+       WHERE visitor_id = $9`,
+      [name, email, phone, empresa, instagram, city, state, zip_code, event.visitor_id]
     );
   },
 
@@ -262,12 +264,13 @@ const TrackingService = {
         city = COALESCE($6, city),
         state = COALESCE($7, state),
         country = COALESCE($8, country),
+        zip_code = COALESCE($9, zip_code),
         status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
         updated_at = NOW()
-       WHERE visitor_id = $9`,
+       WHERE visitor_id = $10`,
       [
         d.name, d.email, d.phone?.replace(/\D/g, ''), d.empresa,
-        instagram, d.city, d.state, d.country,
+        instagram, d.city, d.state, d.country, d.zip_code || d.cep,
         event.visitor_id
       ]
     );

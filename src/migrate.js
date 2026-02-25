@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS visitors (
   city VARCHAR(100),
   state VARCHAR(50),
   country VARCHAR(10),
+  zip_code VARCHAR(20),
   
   -- Primeira visita
   first_seen TIMESTAMP DEFAULT NOW(),
@@ -171,6 +172,7 @@ ALTER TABLE visitors ADD COLUMN IF NOT EXISTS client_user_agent TEXT;
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS city VARCHAR(100);
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS state VARCHAR(50);
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS country VARCHAR(10);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20);
 
 -- Sessions
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fbc TEXT;
