@@ -49,6 +49,9 @@ CREATE TABLE IF NOT EXISTS visitors (
   device_browser VARCHAR(50),
   device_screen VARCHAR(20),
   
+  -- Extra
+  notes TEXT,
+  
   -- Métricas agregadas
   total_visits INTEGER DEFAULT 1,
   total_pageviews INTEGER DEFAULT 0,
@@ -173,6 +176,7 @@ ALTER TABLE visitors ADD COLUMN IF NOT EXISTS city VARCHAR(100);
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS state VARCHAR(50);
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS country VARCHAR(10);
 ALTER TABLE visitors ADD COLUMN IF NOT EXISTS zip_code VARCHAR(20);
+ALTER TABLE visitors ADD COLUMN IF NOT EXISTS notes TEXT;
 
 -- Sessions
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fbc TEXT;

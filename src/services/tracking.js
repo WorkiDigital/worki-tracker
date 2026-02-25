@@ -854,6 +854,101 @@ const TrackingService = {
   },
 
   // ═══════════════════════════════════════
+  // EXPORTAR LEADS (CSV)
+  // ═══════════════════════════════════════
+  async getLeadsCSV(filters = {}) {
+    const { start, end, status, source } = filters;
+    let query = `
+      SELECT 
+        v.visitor_id, v.name, v.email, v.phone, v.empresa, v.instagram,
+        v.status, v.city, v.state, v.country,
+        v.first_seen, v.last_seen,
+        v.first_utm_source as source,
+        v.first_utm_medium as medium,
+        v.first_utm_campaign as campaign,
+        v.total_pageviews, v.converted, v.conversion_value,
+        v.notes
+      FROM visitors v
+      WHERE 1=1
+    `;
+    const params = [];
+    let i = 1;
+
+    if (start) {
+      query += ` AND v.first_seen >= $${i++}`;
+      params.push(start);
+    }
+    if (end) {
+      query += ` AND v.first_seen <= $${i++}::timestamp + interval '1 day'`;
+      params.push(end);
+    }
+    if (status && status !== 'all') {
+      query += ` AND v.status = $${i++}`;
+      params.push(status);
+    }
+    if (source) {
+      query += ` AND v.first_utm_source = $${i++}`;
+      params.push(source);
+    }
+
+    query += ` ORDER BY v.first_seen DESC`;
+
+    const { rows } = await db.pool.query(query, params);
+
+    if (rows.length === 0) return '';
+
+    // Gerar CSV
+    const headers = Object.keys(rows[0]).join(';');
+    const lines = rows.map(row => {
+      return Object.values(row).map(val => {
+        if (val === null || val === undefined) return '';
+        const str = String(val).replace(/[\n\r;]/g, ' ');
+        return `"${str}"`;
+      }).join(';');
+    });
+
+    return [headers, ...lines].join('\n');
+  },
+
+  // ═══════════════════════════════════════
+  // ATUALIZAR NOTAS DO LEAD
+  // ═══════════════════════════════════════
+  async updateLeadNotes(visitorId, notes) {
+    await db.query(
+      'UPDATE visitors SET notes = $1, updated_at = NOW() WHERE visitor_id = $2',
+      [notes, visitorId]
+    );
+    return { success: true };
+  },
+
+  // ═══════════════════════════════════════
+  // DELETAR LEADS EM MASSA
+  // ═══════════════════════════════════════
+  async bulkDeleteLeads(visitorIds) {
+    if (!Array.isArray(visitorIds) || visitorIds.length === 0) {
+      return { success: false, reason: 'Nenhum ID fornecido' };
+    }
+
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Usar a consulta otimizada com ANY para deletar em massa
+      await client.query('DELETE FROM conversions WHERE visitor_id = ANY($1)', [visitorIds]);
+      await client.query('DELETE FROM whatsapp_messages WHERE visitor_id = ANY($1)', [visitorIds]);
+      await client.query('DELETE FROM events WHERE visitor_id = ANY($1)', [visitorIds]);
+      await client.query('DELETE FROM sessions WHERE visitor_id = ANY($1)', [visitorIds]);
+      await client.query('DELETE FROM visitors WHERE visitor_id = ANY($1)', [visitorIds]);
+      await client.query('COMMIT');
+      return { success: true, count: visitorIds.length };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  // ═══════════════════════════════════════
   // DELETAR UM LEAD ESPECÍFICO
   // ═══════════════════════════════════════
   async deleteLead(visitorId) {

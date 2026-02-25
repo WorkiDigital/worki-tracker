@@ -27,38 +27,79 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
+const trackRoutes = require('./routes/track');
+const dashboardRoutes = require('./routes/dashboard');
+const webhookRoutes = require('./routes/webhook');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+// Configuração JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'worki-secret-key-2024';
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'admin123';
+
+// ═══════════════════════════════════════
+// MIDDLEWARE & CONFIG
+// ═══════════════════════════════════════
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Permitir carregar scripts/CSS de CDN no dashboard
+}));
+
 // Compressão
 app.use(compression());
 
-// CORS — permite requests do script na landing page
+// CORS — permite requests do script na landing page e do próprio dashboard
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').filter(Boolean);
 app.use(cors({
   origin: function (origin, callback) {
-    // Permite requests sem origin (server-to-server, webhooks)
     if (!origin) return callback(null, true);
     if (allowedOrigins.length === 0) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Permitir subdomínios ou o próprio domínio do host
+    if (allowedOrigins.some(o => origin.startsWith(o)) || origin.includes('workidigital.tech')) {
+      return callback(null, true);
+    }
     callback(new Error('CORS bloqueado'));
   },
   methods: ['GET', 'POST', 'DELETE', 'PUT', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'X-API-Key', 'X-Webhook-Secret'],
+  allowedHeaders: ['Content-Type', 'X-API-Key', 'X-Webhook-Secret', 'Authorization'],
 }));
 
 // Body parser
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting
 const trackLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 120, // 120 requests por minuto por IP
+  windowMs: 60 * 1000,
+  max: 300,
   message: { error: 'Rate limit excedido' }
 });
 
 const dashboardLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 100,
   message: { error: 'Rate limit excedido' }
+});
+
+// ═══════════════════════════════════════
+// AUTENTICAÇÃO
+// ═══════════════════════════════════════
+
+app.post('/api/auth/login', (req, res) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ error: 'Senha obrigatória' });
+  }
+
+  // No futuro podemos usar o bcrypt aqui, por enquanto simples comparação
+  if (password === DASHBOARD_PASSWORD || password === process.env.API_KEY) {
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '7d' });
+    return res.json({ token });
+  }
+
+  res.status(401).json({ error: 'Senha incorreta' });
 });
 
 // ═══════════════════════════════════════
@@ -68,10 +109,10 @@ const dashboardLimiter = rateLimit({
 // Tracking (recebe eventos do frontend)
 app.use('/api/track', trackLimiter, trackRoutes);
 
-// Webhook WhatsApp (sem rate limit severo)
+// Webhook WhatsApp
 app.use('/api/webhook', webhookRoutes);
 
-// Dashboard API (com autenticação)
+// Dashboard API (com autenticação JWT)
 app.use('/api/dashboard', dashboardLimiter, dashboardRoutes);
 
 // Dashboard frontend (arquivos estáticos)
@@ -86,15 +127,15 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Worki Tracker API',
-    version: '1.0.0',
+    version: '2.0.0',
     endpoints: {
+      login: 'POST /api/auth/login',
       track_events: 'POST /api/track/events',
       track_match: 'POST /api/track/match',
       webhook_whatsapp: 'POST /api/webhook/whatsapp',
       dashboard_stats: 'GET /api/dashboard/stats',
       dashboard_leads: 'GET /api/dashboard/leads',
-      dashboard_journey: 'GET /api/dashboard/leads/:id/journey',
-      dashboard_ui: 'GET /dashboard/',
+      dashboard_export: 'GET /api/dashboard/export',
       health: 'GET /health'
     }
   });

@@ -1,17 +1,79 @@
 const express = require('express');
 const router = express.Router();
 const TrackingService = require('../services/tracking');
+const jwt = require('jsonwebtoken');
 
-// Middleware de autenticação para o dashboard
+const JWT_SECRET = process.env.JWT_SECRET || 'worki-secret-key-2024';
+
+// Middleware de autenticação JWT para o dashboard
 function authMiddleware(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  if (apiKey !== process.env.API_KEY) {
-    return res.status(401).json({ error: 'API Key inválida' });
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    // Fallback para API Key (apenas para compatibilidade temporária se necessário)
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey === process.env.API_KEY) return next();
+
+    return res.status(401).json({ error: 'Token não fornecido' });
   }
-  next();
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: 'Token inválido ou expirado' });
+    req.user = user;
+    next();
+  });
 }
 
 router.use(authMiddleware);
+
+// ═══════════════════════════════════════
+// GET /api/dashboard/export
+// Exportar todos os leads em CSV
+// ═══════════════════════════════════════
+router.get('/export', async (req, res) => {
+  try {
+    const { start, end, status, source } = req.query;
+    const csv = await TrackingService.getLeadsCSV({ start, end, status, source });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=leads_worki.csv');
+    res.send(csv);
+  } catch (err) {
+    console.error('Erro /dashboard/export:', err);
+    res.status(500).json({ error: 'Erro ao gerar exportação' });
+  }
+});
+
+// ═══════════════════════════════════════
+// POST /api/dashboard/leads/bulk-delete
+// Deletar leads em massa
+// ═══════════════════════════════════════
+router.post('/leads/bulk-delete', async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const result = await TrackingService.bulkDeleteLeads(ids);
+    res.json(result);
+  } catch (err) {
+    console.error('Erro /dashboard/leads/bulk-delete:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ═══════════════════════════════════════
+// PATCH /api/dashboard/leads/:visitorId/notes
+// Atualizar notas internas do lead
+// ═══════════════════════════════════════
+router.patch('/leads/:visitorId/notes', async (req, res) => {
+  try {
+    const { notes } = req.body;
+    const result = await TrackingService.updateLeadNotes(req.params.visitorId, notes);
+    res.json(result);
+  } catch (err) {
+    console.error('Erro PATCH /dashboard/leads/notes:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
 
 // ═══════════════════════════════════════
 // GET /api/dashboard/stats

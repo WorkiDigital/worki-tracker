@@ -4,604 +4,523 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Worki Tracker — Dashboard</title>
+  <title>Worki Tracker — Premium Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
     rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #12121a;
-      --surface-2: #1a1a26;
-      --surface-3: #222233;
-      --border: #2a2a3d;
-      --text: #e8e8f0;
-      --text-2: #9898b0;
-      --text-3: #686880;
-      --accent: #00d4aa;
-      --accent-2: #00b894;
-      --accent-glow: rgba(0, 212, 170, 0.15);
-      --warning: #ffa726;
-      --danger: #ef5350;
-      --info: #42a5f5;
-      --purple: #ab47bc;
-      --instagram: #e1306c;
-      --meta: #1877f2;
+      --bg: #050508;
+      --surface: #0c0d12;
+      --surface-2: #16171f;
+      --surface-3: #222330;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.15);
+
+      --text: #ffffff;
+      --text-secondary: #9499ad;
+      --text-muted: #64687a;
+
+      --accent: #00f2fe;
+      --accent-secondary: #4facfe;
+      --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      --accent-glow: rgba(79, 172, 254, 0.3);
+
+      --success: #00df81;
+      --warning: #ffb347;
+      --danger: #ff4d4d;
+      --info: #00a8ff;
+
+      --card-radius: 16px;
+      --input-radius: 10px;
+      --button-radius: 10px;
+
+      --glass: rgba(22, 23, 31, 0.7);
+      --blur: blur(12px);
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
     }
 
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    .topbar {
+    /* ═══════════════════════════════════════
+       LOGIN VIEW
+       ═══════════════════════════════════════ */
+    #login-view {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      display: none;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 40px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .login-card h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+    }
+
+    .login-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .login-field {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .login-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .login-field input {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--input-radius);
+      padding: 14px 16px;
+      color: var(--text);
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: var(--accent-gradient);
+      color: #000;
+      border: none;
+      border-radius: var(--button-radius);
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+      box-shadow: 0 10px 20px rgba(79, 172, 254, 0.4);
+    }
+
+    /* ═══════════════════════════════════════
+       DASHBOARD LAYOUT
+       ═══════════════════════════════════════ */
+    .app-container {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 40px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-box {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-gradient);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 900;
+    }
+
+    .nav-menu {
+      list-style: none;
+      flex: 1;
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-item:hover {
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: var(--surface-2);
+      color: var(--accent);
+      border: 1px solid var(--border);
+    }
+
+    .sidebar-footer {
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .user-pill:hover {
+      color: var(--danger);
+    }
+
+    /* Main Content */
+    .main-content {
+      padding: 40px;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .header-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 40px;
-      background: rgba(10, 10, 15, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      margin-bottom: 32px;
     }
 
-    .topbar h1 {
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      color: var(--accent);
+    .header-row h2 {
+      font-size: 28px;
+      font-weight: 800;
     }
 
-    .topbar .status {
+    /* Global Filters Bar */
+    .filters-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 16px 24px;
       display: flex;
+      gap: 20px;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
-      color: var(--text-3);
-    }
-
-    .topbar .dot-live {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #4caf50;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1
-      }
-
-      50% {
-        opacity: 0.4
-      }
-    }
-
-    .filter-bar {
-      display: flex;
-      gap: 24px;
-      padding: 12px 40px;
-      background: #0d0d14;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 73px;
-      z-index: 99;
-      align-items: center;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
     }
 
     .filter-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
 
     .filter-group label {
       font-size: 10px;
       text-transform: uppercase;
-      color: var(--text-3);
-      letter-spacing: 0.05em;
-      font-weight: 700;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 1px;
     }
 
     .filter-group select,
     .filter-group input {
-      background: #1a1a26;
+      background: var(--surface-2);
       border: 1px solid var(--border);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
       font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
       outline: none;
     }
 
-    .filter-group select:focus {
-      border-color: var(--accent);
+    .btn-refresh {
+      background: var(--accent-gradient);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: auto;
     }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
+    /* Stats Grid */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 12px;
-      margin-bottom: 32px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
     }
 
     .stat-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      position: relative;
-      overflow: hidden;
+      padding: 24px;
+      border-radius: var(--card-radius);
+      transition: all 0.3s;
     }
 
-    .stat-card::after {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-    }
-
-    .stat-card:nth-child(1)::after {
-      background: var(--accent);
-    }
-
-    .stat-card:nth-child(2)::after {
-      background: var(--info);
-    }
-
-    .stat-card:nth-child(3)::after {
-      background: var(--warning);
-    }
-
-    .stat-card:nth-child(4)::after {
-      background: var(--purple);
-    }
-
-    .stat-card:nth-child(5)::after {
-      background: var(--instagram);
-    }
-
-    .stat-card:nth-child(6)::after {
-      background: var(--meta);
+    .stat-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
     }
 
     .stat-label {
-      font-size: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-3);
-      margin-bottom: 6px;
     }
 
     .stat-value {
-      font-family: 'Space Mono', monospace;
-      font-size: 22px;
-      font-weight: 700;
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 8px;
     }
 
-    .stat-card:nth-child(1) .stat-value {
-      color: var(--accent);
-    }
-
-    .stat-card:nth-child(2) .stat-value {
-      color: var(--info);
-    }
-
-    .stat-card:nth-child(3) .stat-value {
-      color: var(--warning);
-    }
-
-    .stat-card:nth-child(4) .stat-value {
-      color: var(--purple);
-    }
-
-    .stat-card:nth-child(5) .stat-value {
-      color: var(--instagram);
-    }
-
-    .stat-card:nth-child(6) .stat-value {
-      color: var(--meta);
-    }
-
-    .stat-sub {
-      font-size: 10px;
-      color: var(--text-3);
-      margin-top: 4px;
-    }
-
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 24px;
-    }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .panel-header h2 {
-      font-size: 15px;
-      font-weight: 600;
-    }
-
-    .filters {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .filter-btn {
-      padding: 6px 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: none;
-      color: var(--text-3);
+    .stat-meta {
       font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-btn:hover {
-      border-color: var(--text-3);
-      color: var(--text-2);
-    }
-
-    .filter-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: var(--accent-glow);
-    }
-
-    .filter-btn.danger {
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .filter-btn.danger:hover {
-      background: rgba(239, 83, 80, 0.1);
-    }
-
-    .actions-cell {
+      color: var(--success);
       display: flex;
+      align-items: center;
       gap: 4px;
     }
 
-    .action-btn {
-      padding: 4px 8px;
-      border-radius: 4px;
+    /* Charts Container */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+
+    .chart-card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      background: none;
-      color: var(--text-3);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: 'DM Sans', sans-serif;
+      padding: 24px;
+      border-radius: var(--card-radius);
     }
 
-    .action-btn:hover {
-      border-color: var(--text-2);
-      color: var(--text);
-      background: var(--surface-2);
+    .chart-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 24px;
     }
 
-    .action-btn.del:hover {
-      border-color: var(--danger);
-      color: var(--danger);
-      background: rgba(239, 83, 80, 0.1);
+    /* Table Container */
+    .table-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      overflow: hidden;
     }
 
-    .edit-modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1100;
-      display: none;
-      justify-content: center;
+    .table-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
       align-items: center;
     }
 
-    .edit-modal-overlay.open {
+    .table-actions {
       display: flex;
+      gap: 12px;
     }
 
-    .edit-modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      width: 100%;
-      max-width: 500px;
-      padding: 24px;
-      animation: slideUp 0.3s ease;
-    }
-
-    .edit-modal h3 {
-      font-size: 16px;
-      margin-bottom: 16px;
-      color: var(--accent);
-    }
-
-    .edit-field {
-      margin-bottom: 12px;
-    }
-
-    .edit-field label {
-      display: block;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-3);
-      margin-bottom: 4px;
-      font-weight: 700;
-    }
-
-    .edit-field input,
-    .edit-field select {
-      width: 100%;
+    .search-pill {
       background: var(--surface-2);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
-      outline: none;
-    }
-
-    .edit-field input:focus,
-    .edit-field select:focus {
-      border-color: var(--accent);
-    }
-
-    .edit-actions {
+      border-radius: 12px;
+      padding: 8px 16px;
       display: flex;
+      align-items: center;
       gap: 10px;
-      justify-content: flex-end;
-      margin-top: 20px;
+      width: 300px;
     }
 
-    .btn-save {
-      padding: 8px 20px;
-      border-radius: 6px;
-      border: none;
-      background: var(--accent);
-      color: var(--bg);
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .btn-cancel {
-      padding: 8px 20px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
+    .search-pill input {
       background: none;
-      color: var(--text-3);
-      font-size: 13px;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .search-input {
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 14px;
+      border: none;
       color: var(--text);
-      font-size: 13px;
-      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      width: 100%;
       outline: none;
-      width: 220px;
-    }
-
-    .search-input:focus {
-      border-color: var(--accent);
-    }
-
-    .search-input::placeholder {
-      color: var(--text-3);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
+      font-size: 14px;
     }
 
     th {
       text-align: left;
-      padding: 12px 16px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-3);
+      padding: 16px 24px;
       background: var(--surface-2);
-      border-bottom: 1px solid var(--border);
-      font-weight: 600;
-      white-space: nowrap;
+      color: var(--text-secondary);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
     }
 
     td {
-      padding: 12px 16px;
-      font-size: 13px;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--border);
-      color: var(--text-2);
-    }
-
-    tr {
-      cursor: pointer;
-      transition: background 0.15s;
+      vertical-align: middle;
     }
 
     tr:hover td {
-      background: var(--surface-2);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .lead-info {
+      display: flex;
+      flex-direction: column;
     }
 
     .lead-name {
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .lead-sub {
-      color: var(--text-3);
-      font-size: 11px;
-    }
-
-    .lead-ig {
-      color: var(--instagram);
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .source-tag {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .src-instagram {
-      background: rgba(225, 48, 108, 0.15);
-      color: var(--instagram);
-    }
-
-    .src-facebook {
-      background: rgba(24, 119, 242, 0.15);
-      color: var(--meta);
-    }
-
-    .src-google {
-      background: rgba(66, 165, 245, 0.15);
-      color: var(--info);
-    }
-
-    .src-direct {
-      background: rgba(0, 212, 170, 0.15);
+      font-weight: 700;
       color: var(--accent);
     }
 
-    .src-whatsapp {
-      background: rgba(76, 175, 80, 0.15);
-      color: #4caf50;
-    }
-
-    .src-other {
-      background: rgba(255, 167, 38, 0.15);
-      color: var(--warning);
+    .lead-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
     }
 
     .status-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
     }
 
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
+    .status-visiting {
+      background: rgba(148, 153, 173, 0.1);
+      color: #9499ad;
     }
 
-    .st-converted .status-dot {
-      background: var(--accent);
+    .status-returning {
+      background: rgba(0, 168, 255, 0.1);
+      color: #00a8ff;
     }
 
-    .st-converted {
+    .status-identified {
+      background: rgba(255, 179, 71, 0.1);
+      color: #ffb347;
+    }
+
+    .status-converted {
+      background: rgba(0, 223, 129, 0.1);
+      color: #00df81;
+    }
+
+    .btn-action {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+      border-color: var(--accent);
       color: var(--accent);
     }
 
-    .st-identified .status-dot {
-      background: var(--info);
+    .btn-action.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
     }
 
-    .st-identified {
-      color: var(--info);
-    }
-
-    .st-returning .status-dot {
-      background: var(--warning);
-    }
-
-    .st-returning {
-      color: var(--warning);
-    }
-
-    .st-visiting .status-dot {
-      background: var(--text-3);
-    }
-
-    .st-visiting {
-      color: var(--text-3);
-    }
-
-    .meta-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-
-    .meta-badge.has-meta {
-      background: rgba(24, 119, 242, 0.15);
-      color: var(--meta);
-    }
-
-    .meta-badge.no-meta {
-      background: rgba(104, 104, 128, 0.1);
-      color: var(--text-3);
-    }
-
-    /* Journey Modal */
+    /* Modal Styling */
     .modal-overlay {
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
       z-index: 1000;
       display: none;
+      align-items: center;
       justify-content: center;
-      align-items: flex-start;
-      padding: 40px;
-      overflow-y: auto;
+      padding: 20px;
     }
 
     .modal-overlay.open {
@@ -611,548 +530,575 @@
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 24px;
       width: 100%;
       max-width: 800px;
-      overflow: hidden;
-      animation: slideUp 0.3s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        transform: translateY(20px);
-        opacity: 0
-      }
-
-      to {
-        transform: translateY(0);
-        opacity: 1
-      }
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 32px;
+      position: relative;
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 24px;
-      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
     }
 
-    .modal-header h2 {
-      font-size: 16px;
-    }
-
-    .modal-close {
+    .close-modal {
       background: var(--surface-2);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text-3);
-      padding: 6px 12px;
-      cursor: pointer;
-      font-size: 12px;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .modal-body {
-      padding: 24px;
-      max-height: 70vh;
-      overflow-y: auto;
-    }
-
-    .lead-info-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .info-box {
-      background: var(--surface-2);
-      border-radius: 8px;
-      padding: 10px 12px;
-    }
-
-    .info-label {
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--text-3);
-      margin-bottom: 3px;
-    }
-
-    .info-value {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
       color: var(--text);
-      word-break: break-all;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
     }
 
-    .info-value.ig {
-      color: var(--instagram);
-    }
-
-    .info-value.meta-link {
-      color: var(--meta);
-    }
-
-    .section-title {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-3);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin: 16px 0 10px;
-    }
-
+    /* Timeline */
     .timeline {
       position: relative;
-      padding-left: 28px;
+      padding-left: 32px;
     }
 
     .timeline::before {
       content: '';
       position: absolute;
-      left: 9px;
+      left: 11px;
       top: 0;
       bottom: 0;
       width: 2px;
       background: var(--border);
     }
 
-    .tl-item {
+    .timeline-item {
       position: relative;
-      margin-bottom: 16px;
+      margin-bottom: 24px;
     }
 
-    .tl-dot {
+    .timeline-dot {
       position: absolute;
-      left: -24px;
+      left: -26px;
       top: 4px;
-      width: 12px;
-      height: 12px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      border: 2px solid;
-      background: var(--bg);
-    }
-
-    .tl-pageview .tl-dot {
-      border-color: var(--info);
-    }
-
-    .tl-click .tl-dot {
-      border-color: var(--accent);
-    }
-
-    .tl-scroll .tl-dot {
-      border-color: var(--text-3);
-    }
-
-    .tl-form_submit .tl-dot,
-    .tl-identify .tl-dot {
-      border-color: var(--purple);
-    }
-
-    .tl-conversion .tl-dot {
-      border-color: var(--accent);
       background: var(--accent);
+      box-shadow: 0 0 0 4px var(--bg);
     }
 
-    .tl-whatsapp_contact .tl-dot {
-      border-color: #4caf50;
-      background: #4caf50;
-    }
-
-    .tl-page_exit .tl-dot {
-      border-color: var(--danger);
-    }
-
-    .tl-heartbeat .tl-dot {
-      border-color: var(--text-3);
-      opacity: 0.5;
-    }
-
-    .tl-content {
+    .timeline-content {
       background: var(--surface-2);
-      border-radius: 8px;
-      padding: 12px 14px;
       border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: 12px;
     }
 
-    .tl-time {
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--text-3);
-      margin-bottom: 3px;
-    }
-
-    .tl-event {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-    }
-
-    .tl-detail {
+    .timeline-time {
       font-size: 11px;
-      color: var(--text-3);
-      margin-top: 2px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
     }
 
-    .empty-state {
-      text-align: center;
-      padding: 60px 24px;
-      color: var(--text-3);
+    .timeline-title {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: var(--text-3);
-    }
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-    }
-
-    .page-btn {
-      padding: 6px 12px;
-      border-radius: 6px;
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      background: var(--surface-3);
       border: 1px solid var(--border);
-      background: none;
-      color: var(--text-3);
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 3000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Select Multiple Toggle */
+    .bulk-selection-bar {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(150px);
+      background: var(--accent-gradient);
+      padding: 12px 24px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #000;
+      font-weight: 700;
+      box-shadow: 0 10px 40px rgba(79, 172, 254, 0.4);
+      z-index: 1500;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .bulk-selection-bar.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .btn-bulk-delete {
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
       font-size: 12px;
       cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
     }
 
-    .page-btn:hover {
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-    .page-btn.active {
-      background: var(--accent);
-      color: var(--bg);
-      border-color: var(--accent);
-    }
-
-    @media(max-width:1100px) {
-      .stats-grid {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    @media(max-width:900px) {
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .lead-info-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .filters {
-        flex-wrap: wrap;
-      }
-    }
-
-    @media(max-width:600px) {
-      .stats-grid {
+    /* Mobile adjustments */
+    @media (max-width: 1024px) {
+      .app-container {
         grid-template-columns: 1fr;
       }
 
-      .container {
-        padding: 12px;
+      .sidebar {
+        display: none;
       }
 
-      .lead-info-grid {
+      .charts-row {
         grid-template-columns: 1fr;
       }
     }
 
-    ::-webkit-scrollbar {
-      width: 6px;
+    /* Loading Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
 
-    ::-webkit-scrollbar-track {
-      background: var(--surface);
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <div class="topbar">
-    <div style="display:flex; align-items:center; gap:32px;">
-      <h1>// WORKI TRACKER v2.0</h1>
-      <nav class="filters" style="margin:0;">
-        <button class="filter-btn active" id="tab-hub" onclick="switchTab('hub')">📊 Dashboard Hub</button>
-        <button class="filter-btn" id="tab-explorer" onclick="switchTab('explorer')">📋 Explorador de Leads</button>
-      </nav>
-    </div>
-    <div class="status">
-      <div class="dot-live"></div> Live Tracking
+  <!-- Login View -->
+  <div id="login-view">
+    <div class="login-card">
+      <div class="logo" style="justify-content: center;">
+        <div class="logo-box">W</div>
+        <span>WORKI TRACKER</span>
+      </div>
+      <h1>Bem-vindo</h1>
+      <p>Acesse sua central de inteligência</p>
+
+      <div class="login-field">
+        <label>Senha de Acesso</label>
+        <input type="password" id="input-password" placeholder="••••••••" onkeypress="if(event.key==='Enter')login()">
+      </div>
+      <button class="btn-login" id="btn-login" onclick="login()">Entrar no Sistema</button>
+      <div id="login-error" style="color: var(--danger); font-size: 12px; margin-top: 16px; display: none;">Senha
+        incorreta. Tente novamente.</div>
     </div>
   </div>
 
-  <!-- Global Filter Bar -->
-  <div class="filter-bar">
-    <div class="filter-group">
-      <label>Período</label>
-      <select id="filter-range" onchange="handleRangeChange()">
-        <option value="0">Hoje</option>
-        <option value="1">Ontem</option>
-        <option value="7">Últimos 7 dias</option>
-        <option value="15">Últimos 15 dias</option>
-        <option value="30" selected>Últimos 30 dias</option>
-        <option value="custom">Personalizado...</option>
-      </select>
-      <div id="custom-range" style="display:none; gap:10px; align-items:center;">
-        <input type="date" id="filter-start" onchange="refreshAll()">
-        <span>até</span>
-        <input type="date" id="filter-end" onchange="refreshAll()">
-      </div>
-    </div>
+  <!-- App View -->
+  <div id="app-view" style="display: none;">
+    <div class="app-container">
 
-    <div class="filter-group">
-      <label>Origem</label>
-      <select id="filter-source" onchange="refreshAll()">
-        <option value="">Todas as origens</option>
-        <option value="direto">Direto / Sem UTM</option>
-      </select>
-    </div>
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-box">W</div>
+          <span>WORKI TRACKER</span>
+        </div>
 
-    <div class="filter-group">
-      <label>Dispositivo</label>
-      <select id="filter-device" onchange="refreshAll()">
-        <option value="">Todos</option>
-        <option value="desktop">Desktop</option>
-        <option value="mobile">Mobile</option>
-        <option value="tablet">Tablet</option>
-      </select>
-    </div>
+        <nav class="nav-menu">
+          <li class="nav-item active" onclick="switchTab('hub', this)">
+            <span>📊</span> Hub Geral
+          </li>
+          <li class="nav-item" onclick="switchTab('leads', this)">
+            <span>👥</span> Explorador de Leads
+          </li>
+          <li class="nav-item" onclick="window.open('/health', '_blank')">
+            <span>⚡</span> Status API
+          </li>
+        </nav>
 
-    <button class="filter-btn" onclick="resetFilters()"
-      style="margin-left:auto; background:rgba(255,255,255,0.05);">Limpar Filtros</button>
+        <div class="sidebar-footer">
+          <div class="user-pill" onclick="logout()">
+            <span>🚪</span> Sair do Sistema
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Section -->
+      <main class="main-content">
+
+        <header class="header-row">
+          <h2 id="view-title">Hub Geral</h2>
+          <div class="status">
+            <span style="color: var(--text-muted)">Sistema Ativo</span>
+            <span
+              style="width: 8px; height: 8px; background: var(--success); border-radius: 50%; display: inline-block; margin-left: 8px; box-shadow: 0 0 10px var(--success)"></span>
+          </div>
+        </header>
+
+        <!-- Global Filters -->
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Período</label>
+            <select id="filter-range" onchange="handleRangeChange()">
+              <option value="0">Hoje</option>
+              <option value="1">Ontem</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="15">Últimos 15 dias</option>
+              <option value="30" selected>Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="custom">Personalizado...</option>
+            </select>
+          </div>
+
+          <div id="custom-dates" style="display: none; gap: 10px;">
+            <div class="filter-group">
+              <label>Início</label>
+              <input type="date" id="filter-start" onchange="refreshData()">
+            </div>
+            <div class="filter-group">
+              <label>Fim</label>
+              <input type="date" id="filter-end" onchange="refreshData()">
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label>Origem (UTM)</label>
+            <select id="filter-source" onchange="refreshData()">
+              <option value="">Todas as origens</option>
+            </select>
+          </div>
+
+          <button class="btn-refresh" onclick="refreshData()">Atualizar Dados</button>
+        </div>
+
+        <!-- View: Hub -->
+        <div id="view-hub" class="view-panel">
+
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Total de Visitantes</div>
+              <div class="stat-value" id="stat-visitors">0</div>
+              <div class="stat-meta">Interesse Ativo</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Novos Leads</div>
+              <div class="stat-value" id="stat-leads" style="color: var(--accent)">0</div>
+              <div class="stat-meta">Contatos Identificados</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Conversões</div>
+              <div class="stat-value" id="stat-conversions" style="color: var(--success)">0</div>
+              <div class="stat-meta">Vendas / Ações</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Taxa de Conv.</div>
+              <div class="stat-value" id="stat-rate">0%</div>
+              <div class="stat-meta">Eficiência do Funil</div>
+            </div>
+          </div>
+
+          <!-- Charts -->
+          <div class="charts-row">
+            <div class="chart-card">
+              <h3>Volume de Atividade</h3>
+              <canvas id="chart-main" height="100"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Tipos de Dispositivos</h3>
+              <canvas id="chart-devices"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- View: Leads Explorer -->
+        <div id="view-leads" class="view-panel" style="display: none;">
+
+          <div class="table-container">
+            <div class="table-header">
+              <div class="search-pill">
+                <span>🔍</span>
+                <input type="text" id="lead-search" placeholder="Buscar por nome, email, id..."
+                  oninput="debounceSearch()">
+              </div>
+
+              <div class="table-actions">
+                <button class="btn-action" title="Exportar CSV" onclick="exportCSV()">📁</button>
+                <button class="btn-action danger" title="Limpar Tudo" onclick="resetAll()">🗑️</button>
+              </div>
+            </div>
+
+            <table id="leads-table">
+              <thead>
+                <tr>
+                  <th width="40"><input type="checkbox" id="check-all" onclick="toggleAllCheck(this)"></th>
+                  <th>Lead / Visitor ID</th>
+                  <th>Entrada</th>
+                  <th>Localização</th>
+                  <th>Origem</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="leads-body">
+                <tr>
+                  <td colspan="7" style="text-align:center; padding: 40px;">Carregando leads...</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div
+              style="padding: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items:center;">
+              <div id="leads-count" style="font-size: 13px; color: var(--text-muted)">Mostrando 0 leads</div>
+              <div id="pagination" style="display: flex; gap: 8px;"></div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
   </div>
 
-  <div class="container">
-    <!-- HUB VIEW (Stats + Graphs) -->
-    <div id="view-hub" class="tab-view">
-      <!-- Stats -->
-      <div class="stats-grid" id="stats-grid" style="margin-bottom: 24px;">
-        <div class="stat-card">
-          <div class="stat-label">Visitantes</div>
-          <div class="stat-value" id="s-visitors">—</div>
-          <div class="stat-sub" id="s-visitors-sub"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Identificados</div>
-          <div class="stat-value" id="s-identified">—</div>
-          <div class="stat-sub" id="s-identified-sub"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Conversões</div>
-          <div class="stat-value" id="s-conversions">—</div>
-          <div class="stat-sub" id="s-conversions-sub"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Receita Total</div>
-          <div class="stat-value" id="s-revenue">—</div>
-          <div class="stat-sub" id="s-revenue-sub"></div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Com Instagram</div>
-          <div class="stat-value" id="s-instagram">—</div>
-          <div class="stat-sub" id="s-instagram-sub">leads com @</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Via Meta Ads</div>
-          <div class="stat-value" id="s-meta">—</div>
-          <div class="stat-sub" id="s-meta-sub">com fbclid</div>
-        </div>
-      </div>
-
-      <!-- Charts Grid -->
-      <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; margin-bottom:20px;">
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Crescimento de Acessos</h2>
-          </div>
-          <div style="padding:20px; height:350px;"><canvas id="chart-growth"></canvas></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Funil de Conversão</h2>
-          </div>
-          <div style="padding:20px; height:350px;"><canvas id="chart-funnel"></canvas></div>
-        </div>
-      </div>
-
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Origens de Tráfego</h2>
-          </div>
-          <div style="padding:20px; height:300px;"><canvas id="chart-sources"></canvas></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Dispositivos</h2>
-          </div>
-          <div style="padding:20px; height:300px;"><canvas id="chart-devices"></canvas></div>
-        </div>
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Top 10 Cidades / Estados</h2>
-          </div>
-          <div style="padding:20px; height:300px;"><canvas id="chart-locations"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- LEADS EXPLORER -->
-    <div id="view-explorer" class="tab-view" style="display:none;">
-      <div class="panel">
-        <div class="panel-header">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <h2>Explorador de Leads</h2>
-            <button class="filter-btn danger" onclick="deleteAllData()" style="padding: 4px 8px; font-size: 10px;">
-              🗑️ Limpar Tudo
-            </button>
-          </div>
-          <div class="filters">
-            <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">Todos</button>
-            <button class="filter-btn" data-status="visiting" onclick="filterStatus(this)">Visitando</button>
-            <button class="filter-btn" data-status="identified" onclick="filterStatus(this)">Identificados</button>
-            <button class="filter-btn" data-status="converted" onclick="filterStatus(this)">Convertidos</button>
-            <input type="text" class="search-input" placeholder="Buscar nome..." oninput="searchLeads(this.value)">
-          </div>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Lead</th>
-              <th>Entrada</th>
-              <th>Contato</th>
-              <th>Origem</th>
-              <th>Meta</th>
-              <th>Última Atividade</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="leads-body">
-            <tr>
-              <td colspan="8" class="loading">Carregando...</td>
-            </tr>
-          </tbody>
-        </table>
-        <div class="pagination" id="pagination"></div>
-      </div>
-    </div>
+  <!-- Bulk Selection Bar -->
+  <div class="bulk-selection-bar" id="bulk-bar">
+    <span id="bulk-count">0 selecionados</span>
+    <button class="btn-bulk-delete" onclick="bulkDelete()">Deletar Selecionados</button>
+    <button style="background: none; border: none; cursor:pointer;" onclick="clearSelection()">✕</button>
   </div>
 
   <!-- Journey Modal -->
-  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-overlay" id="modal-journey" onclick="if(event.target===this)closeModal('modal-journey')">
     <div class="modal">
       <div class="modal-header">
-        <h2 id="modal-title">Jornada do Lead</h2>
-        <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
+        <div>
+          <h2 style="font-size: 20px;">Jornada Completa</h2>
+          <p id="journey-visitor-id"
+            style="font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-muted); margin-top: 4px;"></p>
+        </div>
+        <div class="close-modal" onclick="closeModal('modal-journey')">✕</div>
       </div>
-      <div class="modal-body" id="modal-body">
-        <div class="loading">Carregando jornada...</div>
+
+      <div id="journey-content" class="timeline">
+        <!-- Content here -->
       </div>
     </div>
   </div>
 
   <!-- Edit Lead Modal -->
-  <div class="edit-modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEditModal()">
-    <div class="edit-modal">
-      <h3>✏️ Editar Lead</h3>
-      <input type="hidden" id="edit-visitor-id">
-      <div class="edit-field">
-        <label>Nome</label>
-        <input type="text" id="edit-name" placeholder="Nome do lead">
+  <div class="modal-overlay" id="modal-edit" onclick="if(event.target===this)closeModal('modal-edit')">
+    <div class="modal" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Editar Lead</h2>
+        <div class="close-modal" onclick="closeModal('modal-edit')">✕</div>
       </div>
-      <div class="edit-field">
-        <label>Email</label>
-        <input type="email" id="edit-email" placeholder="email@exemplo.com">
-      </div>
-      <div class="edit-field">
-        <label>Telefone</label>
-        <input type="text" id="edit-phone" placeholder="11999999999">
-      </div>
-      <div class="edit-field">
-        <label>Empresa</label>
-        <input type="text" id="edit-empresa" placeholder="Nome da empresa">
-      </div>
-      <div class="edit-field">
-        <label>Instagram</label>
-        <input type="text" id="edit-instagram" placeholder="@perfil">
-      </div>
-      <div class="edit-field">
-        <label>Status</label>
-        <select id="edit-status">
-          <option value="visiting">Visitando</option>
-          <option value="returning">Retornando</option>
-          <option value="identified">Identificado</option>
-          <option value="converted">Convertido</option>
-        </select>
-      </div>
-      <div class="edit-actions">
-        <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
-        <button class="btn-save" onclick="saveLead()">Salvar</button>
-      </div>
+
+      <form id="edit-form" onsubmit="event.preventDefault(); updateLead()">
+        <input type="hidden" id="edit-id">
+        <div class="login-field">
+          <label>Nome Completo</label>
+          <input type="text" id="edit-name">
+        </div>
+        <div class="login-field">
+          <label>Email</label>
+          <input type="email" id="edit-email">
+        </div>
+        <div class="login-field">
+          <label>Telefone / WhatsApp</label>
+          <input type="text" id="edit-phone">
+        </div>
+        <div class="login-field">
+          <label>Notas Internas</label>
+          <textarea id="edit-notes"
+            style="width:100%; height: 100px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 12px; font-family: inherit; outline: none; resize: none;"></textarea>
+        </div>
+        <div class="login-field">
+          <label>Status</label>
+          <select id="edit-status"
+            style="width: 100%; padding: 12px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 8px;">
+            <option value="visiting">Visitando</option>
+            <option value="returning">Retornando</option>
+            <option value="identified">Identificado</option>
+            <option value="converted">Convertido</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-login" style="margin-top: 20px;">Salvar Alterações</button>
+      </form>
     </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toast-icon">✅</span>
+    <span id="toast-message">Salvo com sucesso</span>
   </div>
 
   <script>
     // ═══════════════════════════════════════
-    // CONFIG
+    // CORE STATE
     // ═══════════════════════════════════════
-    const API_BASE = window.location.origin + '/api/dashboard';
-    let API_KEY = localStorage.getItem('wk_api_key');
+    let TOKEN = localStorage.getItem('wk_token');
+    let charts = {};
+    let searchTimer = null;
+    let selectedIds = new Set();
+    let currentTab = 'hub';
+    let currentPage = 1;
 
-    if (!API_KEY) {
-      API_KEY = prompt('Digite sua API Key para acessar o dashboard:');
-      if (API_KEY) localStorage.setItem('wk_api_key', API_KEY);
+    // ═══════════════════════════════════════
+    // AUTH LOGIC
+    // ═══════════════════════════════════════
+    function checkAuth() {
+      if (!TOKEN) {
+        document.getElementById('login-view').style.display = 'flex';
+        document.getElementById('app-view').style.display = 'none';
+      } else {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('app-view').style.display = 'block';
+        init();
+      }
     }
 
-    const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
+    async function login() {
+      const password = document.getElementById('input-password').value;
+      const btn = document.getElementById('btn-login');
+      const err = document.getElementById('login-error');
 
-    let currentPage = 1;
-    let currentStatus = 'all';
-    let searchQuery = '';
-    let searchTimeout = null;
+      btn.innerHTML = '<div class="spinner" style="margin: 0 auto;"></div>';
+      err.style.display = 'none';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          TOKEN = data.token;
+          localStorage.setItem('wk_token', TOKEN);
+          checkAuth();
+        } else {
+          err.style.display = 'block';
+          btn.innerText = 'Entrar no Sistema';
+        }
+      } catch (e) {
+        showToast('Erro de conexão com servidor', '❌');
+        btn.innerText = 'Entrar no Sistema';
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('wk_token');
+      TOKEN = null;
+      checkAuth();
+    }
 
     // ═══════════════════════════════════════
-    // GLOBAL FILTERS
+    // API WRAPPER
+    // ═══════════════════════════════════════
+    async function api(method, path, body = null) {
+      const query = new URLSearchParams(getFilters()).toString();
+      const url = `/api/dashboard${path}${path.includes('?') ? '&' : '?'}${query}`;
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : null
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        logout();
+        throw new Error('Autenticação expirada');
+      }
+
+      return res.json();
+    }
+
+    // ═══════════════════════════════════════
+    // NAVIGATION
+    // ═══════════════════════════════════════
+    function switchTab(tab, el) {
+      currentTab = tab;
+
+      // UI update
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      el.classList.add('active');
+
+      document.querySelectorAll('.view-panel').forEach(view => view.style.display = 'none');
+      document.getElementById(`view-${tab}`).style.display = 'block';
+
+      document.getElementById('view-title').innerText = el.innerText.split(' ').slice(1).join(' ');
+
+      refreshData();
+    }
+
+    // ═══════════════════════════════════════
+    // DATA LOADING
     // ═══════════════════════════════════════
     function getFilters() {
       const range = document.getElementById('filter-range').value;
-      let start = document.getElementById('filter-start').value;
-      let end = document.getElementById('filter-end').value;
+      let start = '';
+      let end = '';
 
-      if (range !== 'custom') {
+      if (range === 'custom') {
+        start = document.getElementById('filter-start').value;
+        end = document.getElementById('filter-end').value;
+      } else {
         const d = new Date();
         const today = d.toISOString().split('T')[0];
+        end = today;
 
-        if (range === '0') { // Hoje
-          start = end = today;
-        } else if (range === '1') { // Ontem
+        if (range === '0') {
+          start = today;
+        } else if (range === '1') {
           d.setDate(d.getDate() - 1);
           start = end = d.toISOString().split('T')[0];
-        } else { // Presets (7, 15, 30...)
-          end = today;
+        } else {
           d.setDate(d.getDate() - parseInt(range));
           start = d.toISOString().split('T')[0];
         }
@@ -1160,26 +1106,18 @@
 
       return {
         start, end,
-        source: document.getElementById('filter-source').value,
-        device: document.getElementById('filter-device').value
+        source: document.getElementById('filter-source').value
       };
     }
 
     function handleRangeChange() {
       const range = document.getElementById('filter-range').value;
-      document.getElementById('custom-range').style.display = range === 'custom' ? 'flex' : 'none';
-      refreshAll();
+      document.getElementById('custom-dates').style.display = range === 'custom' ? 'flex' : 'none';
+      refreshData();
     }
 
-    function resetFilters() {
-      document.getElementById('filter-range').value = '30';
-      document.getElementById('filter-source').value = '';
-      document.getElementById('filter-device').value = '';
-      handleRangeChange();
-    }
-
-    function refreshAll() {
-      if (document.getElementById('view-hub').style.display !== 'none') {
+    async function refreshData() {
+      if (currentTab === 'hub') {
         loadStats();
         loadCharts();
       } else {
@@ -1187,592 +1125,403 @@
       }
     }
 
-    // ═══════════════════════════════════════
-    // API CLIENT
-    // ═══════════════════════════════════════
-    async function api(path, params = {}) {
-      const filters = getFilters();
-      const query = new URLSearchParams({ ...filters, ...params }).toString();
-      const res = await fetch(`/api/dashboard${path}?${query}`, {
-        headers: { 'x-api-key': API_KEY || '' }
-      });
-      if (res.status === 401) {
-        localStorage.removeItem('wk_api_key');
-        alert('Sessão expirada ou API Key inválida. Recarregue a página.');
-      }
-      if (!res.ok) throw new Error(`API Error: ${res.status}`);
-      return res.json();
-    }
-
-    // ═══════════════════════════════════════
-    // STATS
-    // ═══════════════════════════════════════
     async function loadStats() {
       try {
-        const s = await api('/stats');
-        document.getElementById('s-visitors').textContent = Number(s.total_visitors).toLocaleString('pt-BR');
-        document.getElementById('s-visitors-sub').textContent = `${s.active_7d} ativos (7d)`;
-        document.getElementById('s-identified').textContent = Number(s.identified_leads).toLocaleString('pt-BR');
-        document.getElementById('s-identified-sub').textContent = `${s.whatsapp_contacts} via WhatsApp`;
-        document.getElementById('s-conversions').textContent = Number(s.conversions).toLocaleString('pt-BR');
-        document.getElementById('s-conversions-sub').textContent = `${s.conversion_rate || 0}% taxa`;
-        document.getElementById('s-revenue').textContent = 'R$ ' + Number(s.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-        document.getElementById('s-revenue-sub').textContent = `Média ${s.avg_days_to_convert || '—'} dias p/ converter`;
-        document.getElementById('s-instagram').textContent = Number(s.with_instagram || 0).toLocaleString('pt-BR');
-        document.getElementById('s-meta').textContent = Number(s.from_meta_ads || 0).toLocaleString('pt-BR');
-      } catch (e) { console.error('Stats error:', e); }
+        const data = await api('GET', '/stats');
+        document.getElementById('stat-visitors').innerText = data.total_visitors || 0;
+        document.getElementById('stat-leads').innerText = data.total_leads || 0;
+        document.getElementById('stat-conversions').innerText = data.total_conversions || 0;
+
+        const rate = data.total_visitors > 0 ? ((data.total_leads / data.total_visitors) * 100).toFixed(1) : 0;
+        document.getElementById('stat-rate').innerText = rate + '%';
+      } catch (e) { console.error(e); }
     }
 
-    // ═══════════════════════════════════════
-    // LOAD LEADS
-    // ═══════════════════════════════════════
+    async function loadCharts() {
+      try {
+        const data = await api('GET', '/graphs');
+
+        // Main History Chart
+        renderMainChart(data.history || []);
+
+        // Device Chart
+        renderDeviceChart(data.devices || []);
+      } catch (e) { console.error(e); }
+    }
+
+    function renderMainChart(history) {
+      const ctx = document.getElementById('chart-main').getContext('2d');
+      if (charts.main) charts.main.destroy();
+
+      const labels = history.map(h => {
+        const d = new Date(h.date);
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      });
+
+      charts.main = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Visitantes',
+              data: history.map(h => h.visitors),
+              borderColor: '#4facfe',
+              backgroundColor: 'rgba(79, 172, 254, 0.1)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Leads',
+              data: history.map(h => h.leads),
+              borderColor: '#00df81',
+              backgroundColor: 'rgba(0, 223, 129, 0.1)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 0,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#16171f',
+              padding: 12,
+              titleFont: { size: 14, weight: 'bold' },
+              borderColor: 'rgba(255,255,255,0.1)',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { color: '#64687a', font: { size: 10 } } },
+            y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#64687a', font: { size: 10 } } }
+          }
+        }
+      });
+    }
+
+    function renderDeviceChart(devices) {
+      const ctx = document.getElementById('chart-devices').getContext('2d');
+      if (charts.devices) charts.devices.destroy();
+
+      const labels = devices.map(d => d.type.charAt(0).toUpperCase() + d.type.slice(1));
+      const counts = devices.map(d => d.count);
+
+      charts.devices = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels,
+          datasets: [{
+            data: counts,
+            backgroundColor: ['#4facfe', '#00df81', '#ffb347', '#ff4d4d'],
+            borderWidth: 0,
+            hoverOffset: 10
+          }]
+        },
+        options: {
+          responsive: true,
+          cutout: '70%',
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#9499ad', padding: 20, font: { size: 12, weight: '600' }, usePointStyle: true }
+            }
+          }
+        }
+      });
+    }
+
     async function loadLeads() {
       const tbody = document.getElementById('leads-body');
-      tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+      const search = document.getElementById('lead-search').value;
 
       try {
-        const params = {
-          page: currentPage, limit: 25,
-          ...(currentStatus !== 'all' && { status: currentStatus }),
-          ...(searchQuery && { search: searchQuery })
-        };
-        const data = await api('/leads', params);
-        if (data && data.leads) {
-          renderLeads(data.leads);
-          renderPagination(data.total, data.page, data.limit);
+        const data = await api('GET', `/leads?page=${currentPage}&limit=20&search=${search}`);
+        document.getElementById('leads-count').innerText = `Mostrando ${data.leads.length} de ${data.total} leads`;
 
-          // Atualizar dropdown de fontes dinamicamente
-          updateSourceFilters(data.leads);
+        if (data.leads.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 60px; color: var(--text-muted);">Nenhum lead encontrado</td></tr>';
+          return;
         }
+
+        tbody.innerHTML = data.leads.map(l => {
+          const isChecked = selectedIds.has(l.visitor_id) ? 'checked' : '';
+          const date = new Date(l.first_seen).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+          const geo = l.city ? `${l.city}, ${l.state}` : 'Localizando...';
+          const source = l.first_utm_source || 'Direto / Desconhecido';
+
+          return `
+            <tr>
+              <td><input type="checkbox" onchange="toggleCheck('${l.visitor_id}', this)" ${isChecked}></td>
+              <td>
+                <div class="lead-info">
+                  <span class="lead-name" onclick="viewJourney('${l.visitor_id}')" style="cursor:pointer">${l.name || 'Anônimo'}</span>
+                  <span class="lead-id">${l.visitor_id}</span>
+                </div>
+              </td>
+              <td style="font-size: 13px;">${date}</td>
+              <td style="font-size: 13px; color: var(--text-secondary)">${geo}</td>
+              <td><span style="font-size: 11px; background: var(--surface-2); padding: 4px 8px; border-radius: 6px;">${source}</span></td>
+              <td><span class="status-badge status-${l.status}">${getStatusLabel(l.status)}</span></td>
+              <td>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn-action" onclick="openEdit('${l.visitor_id}', '${l.name || ''}', '${l.email || ''}', '${l.phone || ''}', '${l.status}', '${l.notes || ''}')">✏️</button>
+                  <button class="btn-action danger" onclick="deleteLead('${l.visitor_id}')">🗑️</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        renderPagination(data.total, data.page, data.limit);
       } catch (e) {
-        console.error('Leads error:', e);
-        document.getElementById('leads-body').innerHTML = '<tr><td colspan="8" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 40px; color: var(--danger);">Falha ao carregar leads.</td></tr>';
       }
     }
 
-    function updateSourceFilters(leads) {
-      const sourceSelect = document.getElementById('filter-source');
-      if (sourceSelect.options.length <= 2) {
-        const sources = [...new Set(leads.map(l => l.first_utm_source).filter(Boolean))];
-        sources.forEach(s => {
-          if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
-            const opt = document.createElement('option');
-            opt.value = opt.textContent = s;
-            sourceSelect.appendChild(opt);
-          }
-        });
-      }
-    }
-
-    function renderLeads(leads) {
-      const tbody = document.getElementById('leads-body');
-      if (!leads.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum lead encontrado</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = leads.map(l => {
-        const srcClass = getSourceClass(l.first_utm_source);
-        const srcLabel = l.first_utm_source || 'direto';
-        const stClass = 'st-' + (l.status || 'visiting');
-        const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
-        const name = l.name || l.visitor_id.substring(0, 16) + '...';
-
-        // Formatação de datas
-        const fDate = l.first_seen ? new Date(l.first_seen) : null;
-        const lDate = l.last_seen ? new Date(l.last_seen) : null;
-
-        const fStr = fDate ? `<b>${fDate.toLocaleDateString('pt-BR')}</b><br><small>${fDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</small>` : '—';
-        const lStr = lDate ? `${lDate.toLocaleDateString('pt-BR')} ${lDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : '—';
-
-        // Contato: email + instagram na mesma célula
-        let contactHtml = '';
-        if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
-        if (l.instagram) contactHtml += `<br><span class="lead-ig">${esc(l.instagram)}</span>`;
-        if (!l.email && !l.instagram && l.phone) contactHtml += `<span class="lead-sub">${esc(l.phone)}</span>`;
-        if (!contactHtml) contactHtml = '<span class="lead-sub">—</span>';
-
-        // Sub info do lead
-        const sub = l.phone || l.device_type || '';
-
-        // Meta badge
-        const hasMeta = l.fbclid || l.fbc;
-        const metaHtml = hasMeta
-          ? '<span class="meta-badge has-meta">● Meta</span>'
-          : '<span class="meta-badge no-meta">—</span>';
-
-        return `<tr onclick="openJourney('${l.visitor_id}')">
-      <td><span class="lead-name">${esc(name)}</span><br><span class="lead-sub">${esc(sub)}</span></td>
-      <td><span class="date-cell">${fStr}</span></td>
-      <td>${contactHtml}</td>
-      <td><span class="source-tag ${srcClass}">${esc(srcLabel)}</span></td>
-      <td>${metaHtml}</td>
-      <td><span class="date-sub">${lStr}</span><br><small>${l.total_pageviews || 0} pgs ${l.whatsapp_contacted ? '• ✅ WA' : ''}</small></td>
-      <td><span class="status-badge ${stClass}"><span class="status-dot"></span>${stLabel}</span></td>
-      <td><div class="actions-cell">
-        <button class="action-btn" onclick="event.stopPropagation();editLead('${l.visitor_id}','${esc(l.name || '')}','${esc(l.email || '')}','${esc(l.phone || '')}','${esc(l.empresa || '')}','${esc(l.instagram || '')}','${l.status || 'visiting'}')">✏️</button>
-        <button class="action-btn del" onclick="event.stopPropagation();deleteLead('${l.visitor_id}')">🗑️</button>
-      </div></td>
-    </tr>`;
-      }).join('');
+    function getStatusLabel(st) {
+      const map = { visiting: 'Visitando', returning: 'Retornando', identified: 'Identificado', converted: 'Convertido' };
+      return map[st] || st;
     }
 
     function renderPagination(total, page, limit) {
-      const pages = Math.ceil(total / limit);
-      const el = document.getElementById('pagination');
-      if (pages <= 1) { el.innerHTML = ''; return; }
-
+      const totalPages = Math.ceil(total / limit);
+      const container = document.getElementById('pagination');
       let html = '';
-      for (let i = 1; i <= Math.min(pages, 10); i++) {
-        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
+
+      if (totalPages <= 1) { container.innerHTML = ''; return; }
+
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === page) {
+          html += `<button style="background: var(--accent); color: #000; border: none; width: 32px; height: 32px; border-radius: 8px; font-weight: 700;">${i}</button>`;
+        } else {
+          html += `<button onclick="goToPage(${i})" style="background: var(--surface-2); color: var(--text); border: 1px solid var(--border); width: 32px; height: 32px; border-radius: 8px; cursor: pointer;">${i}</button>`;
+        }
       }
-      el.innerHTML = html;
+      container.innerHTML = html;
+    }
+
+    function goToPage(p) {
+      currentPage = p;
+      loadLeads();
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        currentPage = 1;
+        loadLeads();
+      }, 500);
     }
 
     // ═══════════════════════════════════════
-    // JOURNEY MODAL
+    // ACTIONS
     // ═══════════════════════════════════════
-    async function openJourney(visitorId) {
-      document.getElementById('modal').classList.add('open');
-      document.getElementById('modal-body').innerHTML = '<div class="loading">Carregando jornada...</div>';
+    async function viewJourney(id) {
+      document.getElementById('journey-visitor-id').innerText = id;
+      document.getElementById('journey-content').innerHTML = '<div class="spinner" style="margin: 40px auto;"></div>';
+      document.getElementById('modal-journey').classList.add('open');
 
       try {
-        const j = await api('/leads/' + encodeURIComponent(visitorId) + '/journey');
-        const v = j.visitor;
+        const data = await api('GET', `/leads/${id}/journey`);
+        const events = data.events || [];
 
-        document.getElementById('modal-title').textContent = v.name || v.visitor_id;
-
-        let html = `<div class="lead-info-grid">
-      <div class="info-box"><div class="info-label">Nome</div><div class="info-value">${v.name || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Telefone</div><div class="info-value">${v.phone || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Email</div><div class="info-value">${v.email || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Instagram</div><div class="info-value ig">${v.instagram || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Empresa</div><div class="info-value">${v.empresa || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Origem</div><div class="info-value">${v.first_utm_source || 'direto'}</div></div>
-      <div class="info-box"><div class="info-label">Campanha</div><div class="info-value">${v.first_utm_campaign || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Visitas</div><div class="info-value">${v.total_visits}</div></div>
-      <div class="info-box"><div class="info-label">Conversão</div><div class="info-value">${v.converted ? 'R$ ' + Number(v.conversion_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}</div></div>
-    </div>`;
-
-        // Meta Ads Section (só mostra se tem dados)
-        if (v.fbclid || v.fbc || v.fbp) {
-          html += '<div class="section-title">🔗 Meta Ads Tracking</div>';
-          html += '<div class="lead-info-grid">';
-          if (v.fbclid) html += `<div class="info-box"><div class="info-label">FBCLID</div><div class="info-value meta-link">${v.fbclid.substring(0, 30)}...</div></div>`;
-          if (v.fbc) html += `<div class="info-box"><div class="info-label">FBC (Click ID)</div><div class="info-value meta-link">${v.fbc.substring(0, 30)}...</div></div>`;
-          if (v.fbp) html += `<div class="info-box"><div class="info-label">FBP (Browser ID)</div><div class="info-value meta-link">${v.fbp}</div></div>`;
-          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-          html += '</div>';
+        if (!events.length) {
+          document.getElementById('journey-content').innerHTML = '<p style="text-align:center; color: var(--text-muted)">Nenhuma atividade registrada.</p>';
+          return;
         }
 
-        // Localização (só mostra se tem)
-        if (v.city || v.state || v.country || v.zip_code || v.client_ip) {
-          html += '<div class="section-title">📍 Localização e IP</div>';
-          html += '<div class="lead-info-grid">';
-          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-          if (v.city) html += `<div class="info-box"><div class="info-label">Cidade</div><div class="info-value">${v.city}</div></div>`;
-          if (v.state) html += `<div class="info-box"><div class="info-label">Estado</div><div class="info-value">${v.state}</div></div>`;
-          if (v.zip_code) html += `<div class="info-box"><div class="info-label">CEP</div><div class="info-value">${v.zip_code}</div></div>`;
-          if (v.country) html += `<div class="info-box"><div class="info-label">País</div><div class="info-value">${v.country}</div></div>`;
-          html += '</div>';
-        }
+        document.getElementById('journey-content').innerHTML = events.map(ev => {
+          const d = new Date(ev.created_at).toLocaleString('pt-BR');
+          return `
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <div class="timeline-time">${d}</div>
+                <div class="timeline-title">${formatEventTitle(ev.event_type)}</div>
+                <div style="font-size: 12px; color: var(--text-secondary)">${ev.page || ev.url || ''}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
 
-        // Device
-        html += '<div class="section-title">📱 Dispositivo</div>';
-        html += `<div class="lead-info-grid">
-      <div class="info-box"><div class="info-label">Tipo</div><div class="info-value">${v.device_type || '—'}</div></div>
-      <div class="info-box"><div class="info-label">OS</div><div class="info-value">${v.device_os || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Browser</div><div class="info-value">${v.device_browser || '—'}</div></div>
-      <div class="info-box"><div class="info-label">Tela</div><div class="info-value">${v.device_screen || '—'}</div></div>
-    </div>`;
-
-        // Timeline
-        html += '<div class="section-title">📋 Timeline</div>';
-        const events = j.events.filter(e => e.event_type !== 'heartbeat');
-        html += '<div class="timeline">';
-        events.forEach(e => {
-          const d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data || {});
-          const time = new Date(e.created_at).toLocaleString('pt-BR');
-          const { label, detail } = formatEvent(e.event_type, d, e.page);
-
-          html += `<div class="tl-item tl-${e.event_type}">
-        <div class="tl-dot"></div>
-        <div class="tl-content">
-          <div class="tl-time">${time}</div>
-          <div class="tl-event">${label}</div>
-          ${detail ? `<div class="tl-detail">${detail}</div>` : ''}
-        </div>
-      </div>`;
-        });
-        html += '</div>';
-
-        document.getElementById('modal-body').innerHTML = html;
       } catch (e) {
-        document.getElementById('modal-body').innerHTML = '<div class="empty-state">Erro ao carregar jornada</div>';
+        document.getElementById('journey-content').innerHTML = '<p style="color: var(--danger)">Erro ao carregar jornada.</p>';
       }
     }
 
-    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+    function formatEventTitle(type) {
+      const map = {
+        pageview: '📄 Visualizou Página',
+        click: '🖱️ Clique Detectado',
+        scroll: '📜 Rolagem de Página',
+        form_submit: '📝 Enviou Formulário',
+        identify: '🆔 Identificado',
+        conversion: '💰 CONVERSÃO ✅',
+        whatsapp_contact: '💬 Contato WhatsApp',
+        'Heartbeat': '💓 Ativo na página'
+      };
+      return map[type] || type;
+    }
 
-    function formatEvent(type, data, page) {
-      switch (type) {
-        case 'pageview':
-          return { label: `Visitou ${page || '/'}`, detail: data.utm?.source ? `Via ${data.utm.source}` + (data.utm.campaign ? ` (${data.utm.campaign})` : '') : data.referrer ? `Referrer: ${data.referrer}` : 'Tráfego direto' };
-        case 'click':
-          if (data.type === 'whatsapp_click') return { label: '📱 Clicou no WhatsApp', detail: `Número: ${data.phone || '—'}` };
-          if (data.type === 'phone_click') return { label: '📞 Clicou no telefone', detail: data.phone };
-          return { label: `Clicou: ${data.text || data.id || data.tag}`, detail: data.href || '' };
-        case 'scroll': return { label: `Scroll ${data.depth}`, detail: '' };
-        case 'form_submit':
-          const fields = Object.entries(data.fields || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
-          return { label: '📝 Enviou formulário', detail: fields };
-        case 'identify':
-          return { label: '🏷️ Identificado', detail: `${data.name || ''} ${data.email || ''} ${data.phone || ''} ${data.instagram || ''}`.trim() };
-        case 'conversion': return { label: `🎯 CONVERSÃO${data.source ? ' — via ' + data.source : ''}`, detail: data.value ? `R$ ${Number(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` + (data.product ? ` — ${data.product}` : '') : '' };
-        case 'whatsapp_contact':
-          let waDetail = `${data.pushName || ''}: "${(data.message || '').substring(0, 80)}"`;
-          if (data.ctwaClid) waDetail += ' 🔗 Meta Ad';
-          return { label: '💬 Contato via WhatsApp', detail: waDetail };
-        case 'page_exit': return { label: '🚪 Saiu da página', detail: `Tempo: ${data.time_on_page || 0}s` };
-        case 'exit_intent': return { label: '⚠️ Intenção de saída', detail: '' };
-        case 'visibility': return { label: data.state === 'hidden' ? '👁️ Trocou de aba' : '👁️ Voltou à aba', detail: '' };
-        default: return { label: type, detail: JSON.stringify(data).substring(0, 100) };
+    function openEdit(id, name, email, phone, status, notes) {
+      document.getElementById('edit-id').value = id;
+      document.getElementById('edit-name').value = name;
+      document.getElementById('edit-email').value = email;
+      document.getElementById('edit-phone').value = phone;
+      document.getElementById('edit-status').value = status;
+      document.getElementById('edit-notes').value = notes || '';
+      document.getElementById('modal-edit').classList.add('open');
+    }
+
+    async function updateLead() {
+      const id = document.getElementById('edit-id').value;
+      const body = {
+        name: document.getElementById('edit-name').value,
+        email: document.getElementById('edit-email').value,
+        phone: document.getElementById('edit-phone').value,
+        status: document.getElementById('edit-status').value
+      };
+      const notes = document.getElementById('edit-notes').value;
+
+      try {
+        await api('PUT', `/leads/${id}`, body);
+        await api('PATCH', `/leads/${id}/notes`, { notes });
+
+        closeModal('modal-edit');
+        showToast('Lead atualizado com sucesso!');
+        loadLeads();
+      } catch (e) {
+        showToast('Erro ao atualizar', '❌');
       }
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Excluir este lead permanentemente?')) return;
+      try {
+        await api('DELETE', `/leads/${id}`);
+        showToast('Lead removido');
+        loadLeads();
+      } catch (e) { showToast('Erro ao deletar', '❌'); }
+    }
+
+    async function resetAll() {
+      if (!confirm('ISSO IRÁ APAGAR TODOS OS DADOS DO SISTEMA! Deseja prosseguir?')) return;
+      try {
+        await api('DELETE', '/leads');
+        showToast('Sistema resetado!');
+        refreshData();
+      } catch (e) { showToast('Erro no reset', '❌'); }
+    }
+
+    // ═══════════════════════════════════════
+    // BULK ACTIONS
+    // ═══════════════════════════════════════
+    function toggleCheck(id, el) {
+      if (el.checked) selectedIds.add(id);
+      else selectedIds.delete(id);
+      updateBulkBar();
+    }
+
+    function toggleAllCheck(el) {
+      const checks = document.querySelectorAll('#leads-body input[type="checkbox"]');
+      checks.forEach(c => {
+        c.checked = el.checked;
+        const id = c.closest('tr').querySelector('.lead-id').innerText;
+        if (el.checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+      });
+      updateBulkBar();
+    }
+
+    function updateBulkBar() {
+      const bar = document.getElementById('bulk-bar');
+      const count = document.getElementById('bulk-count');
+      if (selectedIds.size > 0) {
+        count.innerText = `${selectedIds.size} selecionados`;
+        bar.classList.add('show');
+      } else {
+        bar.classList.remove('show');
+      }
+    }
+
+    function clearSelection() {
+      selectedIds.clear();
+      document.getElementById('check-all').checked = false;
+      document.querySelectorAll('#leads-body input[type="checkbox"]').forEach(c => c.checked = false);
+      updateBulkBar();
+    }
+
+    async function bulkDelete() {
+      if (!confirm(`Excluir ${selectedIds.size} leads permanentemente?`)) return;
+      try {
+        await api('POST', '/leads/bulk-delete', { ids: Array.from(selectedIds) });
+        showToast(`${selectedIds.size} leads removidos`);
+        selectedIds.clear();
+        updateBulkBar();
+        loadLeads();
+      } catch (e) { showToast('Erro na exclusão em massa', '❌'); }
+    }
+
+    async function exportCSV() {
+      try {
+        const filters = new URLSearchParams(getFilters()).toString();
+        const res = await fetch(`/api/dashboard/export?${filters}`, {
+          headers: { 'Authorization': `Bearer ${TOKEN}` }
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `leads_worki_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast('Download iniciado');
+      } catch (e) { showToast('Erro no download', '❌'); }
     }
 
     // ═══════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════
-    function getSourceClass(src) {
-      if (!src) return 'src-direct';
-      const s = src.toLowerCase();
-      if (s.includes('instagram')) return 'src-instagram';
-      if (s.includes('facebook') || s.includes('meta') || s.includes('fb')) return 'src-facebook';
-      if (s.includes('google')) return 'src-google';
-      if (s.includes('whatsapp')) return 'src-whatsapp';
-      return 'src-other';
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
     }
 
-    function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
-
-    function filterStatus(btn) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentStatus = btn.dataset.status;
-      currentPage = 1;
-      loadLeads();
+    function showToast(msg, icon = '✅') {
+      const t = document.getElementById('toast');
+      document.getElementById('toast-message').innerText = msg;
+      document.getElementById('toast-icon').innerText = icon;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3000);
     }
 
-    function searchLeads(q) {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => { searchQuery = q; currentPage = 1; loadLeads(); }, 300);
-    }
+    async function init() {
+      loadStats();
+      loadCharts();
 
-    function goPage(p) { currentPage = p; loadLeads(); }
-
-    // ═══════════════════════════════════════
-    // TABS
-    // ═══════════════════════════════════════
-    async function switchTab(tab) {
-      document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
-      document.querySelectorAll('.topbar .filter-btn').forEach(btn => btn.classList.remove('active'));
-
-      if (tab === 'hub') {
-        document.getElementById('view-hub').style.display = 'block';
-        document.getElementById('tab-hub').classList.add('active');
-        loadCharts();
-        loadStats();
-      } else {
-        document.getElementById('view-explorer').style.display = 'block';
-        document.getElementById('tab-explorer').classList.add('active');
-        loadLeads();
-      }
-    }
-
-    // ═══════════════════════════════════════
-    // CHARTS
-    // ═══════════════════════════════════════
-    let charts = {};
-
-    async function loadCharts() {
+      // Load sources for filter
       try {
-        const data = await api('/graphs');
-        renderFunnelChart(data.funnel);
-        renderGrowthChart(data.timeSeries);
-        renderDeviceChart(data.devices);
-        renderLocationChart(data.locations);
-        renderSourceChart(data.sources);
-      } catch (e) { console.error('Charts error:', e); }
+        const res = await fetch('/api/dashboard/sources', { headers: { 'Authorization': `Bearer ${TOKEN}` } });
+        const sources = await res.json();
+        const select = document.getElementById('filter-source');
+        select.innerHTML = '<option value="">Todas as origens</option>' +
+          sources.map(s => `<option value="${s.source}">${s.source} (${s.count})</option>`).join('');
+      } catch (e) { }
     }
 
-    function renderFunnelChart(f) {
-      if (charts.funnel) charts.funnel.destroy();
-      const ctx = document.getElementById('chart-funnel').getContext('2d');
-      charts.funnel = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Visitantes', 'Identificados', 'Convertidos'],
-          datasets: [{
-            data: [f.total, f.identified, f.converted],
-            backgroundColor: ['rgba(0, 212, 170, 0.2)', 'rgba(0, 212, 170, 0.5)', '#00d4aa'],
-            borderColor: '#00d4aa',
-            borderWidth: 1,
-            borderRadius: 8
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            y: {
-              grid: { color: '#2a2a3d' },
-              ticks: { color: '#9898b0' },
-              beginAtZero: true
-            },
-            x: { grid: { display: false }, ticks: { color: '#e8e8f0', font: { weight: 'bold' } } }
-          }
-        }
-      });
-    }
+    // Start
+    checkAuth();
 
-    function renderGrowthChart(ts) {
-      if (charts.growth) charts.growth.destroy();
-      const ctx = document.getElementById('chart-growth').getContext('2d');
-
-      const gradientV = ctx.createLinearGradient(0, 0, 0, 400);
-      gradientV.addColorStop(0, 'rgba(0, 212, 170, 0.3)');
-      gradientV.addColorStop(1, 'rgba(0, 212, 170, 0)');
-
-      const gradientP = ctx.createLinearGradient(0, 0, 0, 400);
-      gradientP.addColorStop(0, 'rgba(66, 165, 245, 0.2)');
-      gradientP.addColorStop(1, 'rgba(66, 165, 245, 0)');
-
-      charts.growth = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: ts.map(d => d.date),
-          datasets: [
-            {
-              label: 'Visitantes',
-              data: ts.map(d => d.new_visitors),
-              borderColor: '#00d4aa',
-              backgroundColor: gradientV,
-              fill: true,
-              tension: 0.4,
-              borderWidth: 3,
-              pointRadius: 4,
-              pointBackgroundColor: '#00d4aa'
-            },
-            {
-              label: 'Pageviews',
-              data: ts.map(d => d.pageviews),
-              borderColor: '#42a5f5',
-              backgroundColor: gradientP,
-              fill: true,
-              tension: 0.4,
-              borderWidth: 2,
-              pointRadius: 0
-            }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'top', labels: { color: '#9898b0', usePointStyle: true } }
-          },
-          scales: {
-            x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
-            y: { grid: { color: '#2a2a3d', borderDash: [5, 5] }, ticks: { color: '#9898b0' }, beginAtZero: true }
-          }
-        }
-      });
-    }
-
-    function renderDeviceChart(devs) {
-      if (charts.devices) charts.devices.destroy();
-      const ctx = document.getElementById('chart-devices').getContext('2d');
-      charts.devices = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: devs.map(d => d.label),
-          datasets: [{
-            data: devs.map(d => d.value),
-            backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc'],
-            borderWidth: 0,
-            hoverOffset: 15
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { color: '#9898b0', padding: 20 } }
-          },
-          cutout: '70%'
-        }
-      });
-    }
-
-    function renderLocationChart(locs) {
-      if (charts.locations) charts.locations.destroy();
-      const ctx = document.getElementById('chart-locations').getContext('2d');
-      charts.locations = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: locs.map(l => `${l.city} (${l.state})`),
-          datasets: [{
-            label: 'Visitantes',
-            data: locs.map(l => l.value),
-            backgroundColor: 'rgba(66, 165, 245, 0.5)',
-            borderColor: '#42a5f5',
-            borderWidth: 1,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          indexAxis: 'y',
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
-            y: { grid: { display: false }, ticks: { color: '#9898b0' } }
-          }
-        }
-      });
-    }
-
-    function renderSourceChart(srcs) {
-      if (charts.sources) charts.sources.destroy();
-      const ctx = document.getElementById('chart-sources').getContext('2d');
-      charts.sources = new Chart(ctx, {
-        type: 'polarArea',
-        data: {
-          labels: srcs.map(s => s.label),
-          datasets: [{
-            data: srcs.map(s => s.value),
-            backgroundColor: [
-              'rgba(0, 212, 170, 0.6)',
-              'rgba(66, 165, 245, 0.6)',
-              'rgba(255, 167, 38, 0.6)',
-              'rgba(171, 71, 188, 0.6)',
-              'rgba(236, 64, 122, 0.6)'
-            ],
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          scales: {
-            r: {
-              grid: { color: '#2a2a3d' },
-              ticks: { display: false }
-            }
-          },
-          plugins: {
-            legend: { position: 'right', labels: { color: '#9898b0', font: { size: 10 } } }
-          }
-        }
-      });
-    }
-
-    async function deleteAllData() {
-      if (!confirm('🚨 ATENÇÃO: Isso apagará TODOS os leads, visitas, sessões e conversões do sistema. Esta ação é IRREVERSÍVEL.\n\nDeseja prosseguir?')) {
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/leads`, {
-          method: 'DELETE',
-          headers
-        });
-
-        if (res.ok) {
-          alert('✅ Sistema resetado com sucesso.');
-          refreshAll();
-        } else {
-          const err = await res.json();
-          alert('❌ Erro: ' + (err.error || 'Falha ao processar'));
-        }
-      } catch (e) {
-        alert('❌ Erro de conexão');
-      }
-    }
-
-    // ═══════════════════════════════════════
-    // DELETAR LEAD INDIVIDUAL
-    // ═══════════════════════════════════════
-    async function deleteLead(visitorId) {
-      if (!confirm('Tem certeza que deseja deletar este lead? Esta ação é irreversível.')) return;
-      try {
-        const res = await fetch(`${API_BASE}/leads/${encodeURIComponent(visitorId)}`, {
-          method: 'DELETE',
-          headers
-        });
-        if (res.ok) {
-          loadLeads();
-          loadStats();
-        } else {
-          const err = await res.json();
-          alert('❌ Erro: ' + (err.error || 'Falha ao deletar'));
-        }
-      } catch (e) {
-        alert('❌ Erro de conexão');
-      }
-    }
-
-    // ═══════════════════════════════════════
-    // EDITAR LEAD
-    // ═══════════════════════════════════════
-    function editLead(visitorId, name, email, phone, empresa, instagram, status) {
-      document.getElementById('edit-visitor-id').value = visitorId;
-      document.getElementById('edit-name').value = name;
-      document.getElementById('edit-email').value = email;
-      document.getElementById('edit-phone').value = phone;
-      document.getElementById('edit-empresa').value = empresa;
-      document.getElementById('edit-instagram').value = instagram;
-      document.getElementById('edit-status').value = status;
-      document.getElementById('edit-modal').classList.add('open');
-    }
-
-    function closeEditModal() {
-      document.getElementById('edit-modal').classList.remove('open');
-    }
-
-    async function saveLead() {
-      const visitorId = document.getElementById('edit-visitor-id').value;
-      const body = {
-        name: document.getElementById('edit-name').value || null,
-        email: document.getElementById('edit-email').value || null,
-        phone: document.getElementById('edit-phone').value || null,
-        empresa: document.getElementById('edit-empresa').value || null,
-        instagram: document.getElementById('edit-instagram').value || null,
-        status: document.getElementById('edit-status').value
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/leads/${encodeURIComponent(visitorId)}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(body)
-        });
-        if (res.ok) {
-          closeEditModal();
-          loadLeads();
-          loadStats();
-        } else {
-          const err = await res.json();
-          alert('❌ Erro: ' + (err.error || 'Falha ao atualizar'));
-        }
-      } catch (e) {
-        alert('❌ Erro de conexão');
-      }
-    }
-
-    // ═══════════════════════════════════════
-    // INIT
-    // ═══════════════════════════════════════
-    loadStats();
-    loadLeads();
-    setInterval(loadStats, 30000);
   </script>
 </body>
 
