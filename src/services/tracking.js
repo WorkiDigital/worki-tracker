@@ -718,6 +718,9 @@ const TrackingService = {
       where += ` AND v.device_type = $${params.length}`;
     }
 
+    // Compensar índice dos parâmetros para o gráfico de linha ($1 e $2 são start/end)
+    const graphWhere = where.replace(/\$(\d+)/g, (match, p1) => `$${parseInt(p1) + 2}`);
+
     // 1. TimeSeries: Série de dias
     const timeSeries = await db.many(`
       WITH days AS (
@@ -730,14 +733,14 @@ const TrackingService = {
       daily_visitors AS (
         SELECT first_seen::date as day, COUNT(*) as count 
         FROM visitors v 
-        ${where} 
+        ${graphWhere} 
         GROUP BY 1
       ),
       daily_views AS (
         SELECT e.created_at::date as day, COUNT(*) as count 
         FROM events e 
         JOIN visitors v ON v.visitor_id = e.visitor_id
-        ${where.replace('v.first_seen', 'e.created_at')} 
+        ${graphWhere.replace('v.first_seen', 'e.created_at')} 
         AND e.event_type = 'pageview'
         GROUP BY 1
       )
