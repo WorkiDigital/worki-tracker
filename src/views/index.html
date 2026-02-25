@@ -761,8 +761,8 @@
     <div style="display:flex; align-items:center; gap:32px;">
       <h1>// WORKI TRACKER v2.0</h1>
       <nav class="filters" style="margin:0;">
-        <button class="filter-btn active" id="tab-leads" onclick="switchTab('leads')">📋 Leads</button>
-        <button class="filter-btn" id="tab-charts" onclick="switchTab('charts')">📊 Gráficos</button>
+        <button class="filter-btn active" id="tab-hub" onclick="switchTab('hub')">📊 Dashboard Hub</button>
+        <button class="filter-btn" id="tab-explorer" onclick="switchTab('explorer')">📋 Explorador de Leads</button>
       </nav>
     </div>
     <div class="status">
@@ -812,52 +812,91 @@
   </div>
 
   <div class="container">
-    <!-- Stats -->
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Visitantes</div>
-        <div class="stat-value" id="s-visitors">—</div>
-        <div class="stat-sub" id="s-visitors-sub"></div>
+    <!-- HUB VIEW (Stats + Graphs) -->
+    <div id="view-hub" class="tab-view">
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid" style="margin-bottom: 24px;">
+        <div class="stat-card">
+          <div class="stat-label">Visitantes</div>
+          <div class="stat-value" id="s-visitors">—</div>
+          <div class="stat-sub" id="s-visitors-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Identificados</div>
+          <div class="stat-value" id="s-identified">—</div>
+          <div class="stat-sub" id="s-identified-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Conversões</div>
+          <div class="stat-value" id="s-conversions">—</div>
+          <div class="stat-sub" id="s-conversions-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Receita Total</div>
+          <div class="stat-value" id="s-revenue">—</div>
+          <div class="stat-sub" id="s-revenue-sub"></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Com Instagram</div>
+          <div class="stat-value" id="s-instagram">—</div>
+          <div class="stat-sub" id="s-instagram-sub">leads com @</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Via Meta Ads</div>
+          <div class="stat-value" id="s-meta">—</div>
+          <div class="stat-sub" id="s-meta-sub">com fbclid</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Identificados</div>
-        <div class="stat-value" id="s-identified">—</div>
-        <div class="stat-sub" id="s-identified-sub"></div>
+
+      <!-- Charts Grid -->
+      <div style="display:grid; grid-template-columns: 1.5fr 1fr; gap:20px; margin-bottom:20px;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Crescimento de Acessos</h2>
+          </div>
+          <div style="padding:20px; height:350px;"><canvas id="chart-growth"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Funil de Conversão</h2>
+          </div>
+          <div style="padding:20px; height:350px;"><canvas id="chart-funnel"></canvas></div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Conversões</div>
-        <div class="stat-value" id="s-conversions">—</div>
-        <div class="stat-sub" id="s-conversions-sub"></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Receita Total</div>
-        <div class="stat-value" id="s-revenue">—</div>
-        <div class="stat-sub" id="s-revenue-sub"></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Com Instagram</div>
-        <div class="stat-value" id="s-instagram">—</div>
-        <div class="stat-sub" id="s-instagram-sub">leads com @</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Via Meta Ads</div>
-        <div class="stat-value" id="s-meta">—</div>
-        <div class="stat-sub" id="s-meta-sub">com fbclid</div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px;">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Origens de Tráfego</h2>
+          </div>
+          <div style="padding:20px; height:300px;"><canvas id="chart-sources"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Dispositivos</h2>
+          </div>
+          <div style="padding:20px; height:300px;"><canvas id="chart-devices"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Top 10 Cidades / Estados</h2>
+          </div>
+          <div style="padding:20px; height:300px;"><canvas id="chart-locations"></canvas></div>
+        </div>
       </div>
     </div>
 
-    <!-- Leads Table -->
-    <div id="view-leads" class="tab-view">
+    <!-- LEADS EXPLORER -->
+    <div id="view-explorer" class="tab-view" style="display:none;">
       <div class="panel">
         <div class="panel-header">
-          <h2>Leads</h2>
+          <h2>Explorador de Leads</h2>
           <div class="filters">
             <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">Todos</button>
             <button class="filter-btn" data-status="visiting" onclick="filterStatus(this)">Visitando</button>
             <button class="filter-btn" data-status="identified" onclick="filterStatus(this)">Identificados</button>
             <button class="filter-btn" data-status="converted" onclick="filterStatus(this)">Convertidos</button>
-            <input type="text" class="search-input" placeholder="Buscar nome, email, @instagram..."
-              oninput="searchLeads(this.value)">
+            <input type="text" class="search-input" placeholder="Buscar nome..." oninput="searchLeads(this.value)">
           </div>
         </div>
         <table>
@@ -880,236 +919,202 @@
         </table>
         <div class="pagination" id="pagination"></div>
       </div>
+    </div>
+  </div>
 
-      <!-- Charts View -->
-      <div id="view-charts" class="tab-view" style="display:none;">
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; margin-bottom:20px;">
-          <div class="panel">
-            <div class="panel-header">
-              <h2>Funil de Vendas</h2>
-            </div>
-            <div style="padding:20px; height:300px;"><canvas id="chart-funnel"></canvas></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header">
-              <h2>Crescimento de Acessos</h2>
-            </div>
-            <div style="padding:20px; height:300px;"><canvas id="chart-growth"></canvas></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header">
-              <h2>Dispositivos</h2>
-            </div>
-            <div style="padding:20px; height:300px;"><canvas id="chart-devices"></canvas></div>
-          </div>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-          <div class="panel">
-            <div class="panel-header">
-              <h2>Top 10 Cidades / Estados</h2>
-            </div>
-            <div style="padding:20px; height:350px;"><canvas id="chart-locations"></canvas></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header">
-              <h2>Origens Detalhadas</h2>
-            </div>
-            <div style="padding:20px; height:350px;"><canvas id="chart-sources"></canvas></div>
-          </div>
-        </div>
+  <!-- Journey Modal -->
+  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Jornada do Lead</h2>
+        <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <div class="loading">Carregando jornada...</div>
       </div>
     </div>
+  </div>
 
-    <!-- Journey Modal -->
-    <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
-      <div class="modal">
-        <div class="modal-header">
-          <h2 id="modal-title">Jornada do Lead</h2>
-          <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
-        </div>
-        <div class="modal-body" id="modal-body">
-          <div class="loading">Carregando jornada...</div>
-        </div>
-      </div>
-    </div>
+  <script>
+    // ═══════════════════════════════════════
+    // CONFIG
+    // ═══════════════════════════════════════
+    const API_BASE = window.location.origin + '/api/dashboard';
+    let API_KEY = localStorage.getItem('wk_api_key');
 
-    <script>
-      // ═══════════════════════════════════════
-      // CONFIG
-      // ═══════════════════════════════════════
-      const API_BASE = window.location.origin + '/api/dashboard';
-      let API_KEY = localStorage.getItem('wk_api_key');
+    if (!API_KEY) {
+      API_KEY = prompt('Digite sua API Key para acessar o dashboard:');
+      if (API_KEY) localStorage.setItem('wk_api_key', API_KEY);
+    }
 
-      if (!API_KEY) {
-        API_KEY = prompt('Digite sua API Key para acessar o dashboard:');
-        if (API_KEY) localStorage.setItem('wk_api_key', API_KEY);
-      }
+    const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
 
-      const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
+    let currentPage = 1;
+    let currentStatus = 'all';
+    let searchQuery = '';
+    let searchTimeout = null;
 
-      let currentPage = 1;
-      let currentStatus = 'all';
-      let searchQuery = '';
-      let searchTimeout = null;
+    // ═══════════════════════════════════════
+    // GLOBAL FILTERS
+    // ═══════════════════════════════════════
+    function getFilters() {
+      const range = document.getElementById('filter-range').value;
+      let start = document.getElementById('filter-start').value;
+      let end = document.getElementById('filter-end').value;
 
-      // ═══════════════════════════════════════
-      // GLOBAL FILTERS
-      // ═══════════════════════════════════════
-      function getFilters() {
-        const range = document.getElementById('filter-range').value;
-        let start = document.getElementById('filter-start').value;
-        let end = document.getElementById('filter-end').value;
+      if (range !== 'custom') {
+        const d = new Date();
+        const today = d.toISOString().split('T')[0];
 
-        if (range !== 'custom') {
-          const d = new Date();
-          const today = d.toISOString().split('T')[0];
-
-          if (range === '0') { // Hoje
-            start = end = today;
-          } else if (range === '1') { // Ontem
-            d.setDate(d.getDate() - 1);
-            start = end = d.toISOString().split('T')[0];
-          } else { // Presets (7, 15, 30...)
-            end = today;
-            d.setDate(d.getDate() - parseInt(range));
-            start = d.toISOString().split('T')[0];
-          }
+        if (range === '0') { // Hoje
+          start = end = today;
+        } else if (range === '1') { // Ontem
+          d.setDate(d.getDate() - 1);
+          start = end = d.toISOString().split('T')[0];
+        } else { // Presets (7, 15, 30...)
+          end = today;
+          d.setDate(d.getDate() - parseInt(range));
+          start = d.toISOString().split('T')[0];
         }
-
-        return {
-          start, end,
-          source: document.getElementById('filter-source').value,
-          device: document.getElementById('filter-device').value
-        };
       }
 
-      function handleRangeChange() {
-        const range = document.getElementById('filter-range').value;
-        document.getElementById('custom-range').style.display = range === 'custom' ? 'flex' : 'none';
-        refreshAll();
-      }
+      return {
+        start, end,
+        source: document.getElementById('filter-source').value,
+        device: document.getElementById('filter-device').value
+      };
+    }
 
-      function resetFilters() {
-        document.getElementById('filter-range').value = '30';
-        document.getElementById('filter-source').value = '';
-        document.getElementById('filter-device').value = '';
-        handleRangeChange();
-      }
+    function handleRangeChange() {
+      const range = document.getElementById('filter-range').value;
+      document.getElementById('custom-range').style.display = range === 'custom' ? 'flex' : 'none';
+      refreshAll();
+    }
 
-      function refreshAll() {
+    function resetFilters() {
+      document.getElementById('filter-range').value = '30';
+      document.getElementById('filter-source').value = '';
+      document.getElementById('filter-device').value = '';
+      handleRangeChange();
+    }
+
+    function refreshAll() {
+      if (document.getElementById('view-hub').style.display !== 'none') {
         loadStats();
+        loadCharts();
+      } else {
         loadLeads();
-        if (document.getElementById('view-charts').style.display === 'block') loadCharts();
       }
+    }
 
-      // ═══════════════════════════════════════
-      // API CLIENT
-      // ═══════════════════════════════════════
-      async function api(path, params = {}) {
-        const filters = getFilters();
-        const query = new URLSearchParams({ ...filters, ...params }).toString();
-        const res = await fetch(`/api/dashboard${path}?${query}`, {
-          headers: { 'x-api-key': API_KEY || '' }
-        });
-        if (res.status === 401) {
-          localStorage.removeItem('wk_api_key');
-          alert('Sessão expirada ou API Key inválida. Recarregue a página.');
+    // ═══════════════════════════════════════
+    // API CLIENT
+    // ═══════════════════════════════════════
+    async function api(path, params = {}) {
+      const filters = getFilters();
+      const query = new URLSearchParams({ ...filters, ...params }).toString();
+      const res = await fetch(`/api/dashboard${path}?${query}`, {
+        headers: { 'x-api-key': API_KEY || '' }
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('wk_api_key');
+        alert('Sessão expirada ou API Key inválida. Recarregue a página.');
+      }
+      if (!res.ok) throw new Error(`API Error: ${res.status}`);
+      return res.json();
+    }
+
+    // ═══════════════════════════════════════
+    // STATS
+    // ═══════════════════════════════════════
+    async function loadStats() {
+      try {
+        const s = await api('/stats');
+        document.getElementById('s-visitors').textContent = Number(s.total_visitors).toLocaleString('pt-BR');
+        document.getElementById('s-visitors-sub').textContent = `${s.active_7d} ativos (7d)`;
+        document.getElementById('s-identified').textContent = Number(s.identified_leads).toLocaleString('pt-BR');
+        document.getElementById('s-identified-sub').textContent = `${s.whatsapp_contacts} via WhatsApp`;
+        document.getElementById('s-conversions').textContent = Number(s.conversions).toLocaleString('pt-BR');
+        document.getElementById('s-conversions-sub').textContent = `${s.conversion_rate || 0}% taxa`;
+        document.getElementById('s-revenue').textContent = 'R$ ' + Number(s.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        document.getElementById('s-revenue-sub').textContent = `Média ${s.avg_days_to_convert || '—'} dias p/ converter`;
+        document.getElementById('s-instagram').textContent = Number(s.with_instagram || 0).toLocaleString('pt-BR');
+        document.getElementById('s-meta').textContent = Number(s.from_meta_ads || 0).toLocaleString('pt-BR');
+      } catch (e) { console.error('Stats error:', e); }
+    }
+
+    // ═══════════════════════════════════════
+    // LOAD LEADS
+    // ═══════════════════════════════════════
+    async function loadLeads() {
+      const tbody = document.getElementById('leads-body');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+
+      try {
+        const params = {
+          page: currentPage, limit: 25,
+          ...(currentStatus !== 'all' && { status: currentStatus }),
+          ...(searchQuery && { search: searchQuery })
+        };
+        const data = await api('/leads', params);
+        if (data && data.leads) {
+          renderLeads(data.leads);
+          renderPagination(data.total, data.page, data.limit);
+
+          // Atualizar dropdown de fontes dinamicamente
+          updateSourceFilters(data.leads);
         }
-        if (!res.ok) throw new Error(`API Error: ${res.status}`);
-        return res.json();
+      } catch (e) {
+        console.error('Leads error:', e);
+        document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
       }
+    }
 
-      // ═══════════════════════════════════════
-      // STATS
-      // ═══════════════════════════════════════
-      async function loadStats() {
-        try {
-          const s = await api('/stats');
-          document.getElementById('s-visitors').textContent = Number(s.total_visitors).toLocaleString('pt-BR');
-          document.getElementById('s-visitors-sub').textContent = `${s.active_7d} ativos (7d)`;
-          document.getElementById('s-identified').textContent = Number(s.identified_leads).toLocaleString('pt-BR');
-          document.getElementById('s-identified-sub').textContent = `${s.whatsapp_contacts} via WhatsApp`;
-          document.getElementById('s-conversions').textContent = Number(s.conversions).toLocaleString('pt-BR');
-          document.getElementById('s-conversions-sub').textContent = `${s.conversion_rate || 0}% taxa`;
-          document.getElementById('s-revenue').textContent = 'R$ ' + Number(s.total_revenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-          document.getElementById('s-revenue-sub').textContent = `Média ${s.avg_days_to_convert || '—'} dias p/ converter`;
-          document.getElementById('s-instagram').textContent = Number(s.with_instagram || 0).toLocaleString('pt-BR');
-          document.getElementById('s-meta').textContent = Number(s.from_meta_ads || 0).toLocaleString('pt-BR');
-        } catch (e) { console.error('Stats error:', e); }
-      }
-
-      // ═══════════════════════════════════════
-      // LOAD LEADS
-      // ═══════════════════════════════════════
-      async function loadLeads() {
-        const tbody = document.getElementById('leads-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
-
-        try {
-          const params = {
-            page: currentPage, limit: 25,
-            ...(currentStatus !== 'all' && { status: currentStatus }),
-            ...(searchQuery && { search: searchQuery })
-          };
-          const data = await api('/leads', params);
-          if (data && data.leads) {
-            renderLeads(data.leads);
-            renderPagination(data.total, data.page, data.limit);
-
-            // Atualizar dropdown de fontes dinamicamente
-            updateSourceFilters(data.leads);
+    function updateSourceFilters(leads) {
+      const sourceSelect = document.getElementById('filter-source');
+      if (sourceSelect.options.length <= 2) {
+        const sources = [...new Set(leads.map(l => l.first_utm_source).filter(Boolean))];
+        sources.forEach(s => {
+          if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = s;
+            sourceSelect.appendChild(opt);
           }
-        } catch (e) {
-          console.error('Leads error:', e);
-          document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
-        }
+        });
+      }
+    }
+
+    function renderLeads(leads) {
+      const tbody = document.getElementById('leads-body');
+      if (!leads.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lead encontrado</td></tr>';
+        return;
       }
 
-      function updateSourceFilters(leads) {
-        const sourceSelect = document.getElementById('filter-source');
-        if (sourceSelect.options.length <= 2) {
-          const sources = [...new Set(leads.map(l => l.first_utm_source).filter(Boolean))];
-          sources.forEach(s => {
-            if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
-              const opt = document.createElement('option');
-              opt.value = opt.textContent = s;
-              sourceSelect.appendChild(opt);
-            }
-          });
-        }
-      }
+      tbody.innerHTML = leads.map(l => {
+        const srcClass = getSourceClass(l.first_utm_source);
+        const srcLabel = l.first_utm_source || 'direto';
+        const stClass = 'st-' + (l.status || 'visiting');
+        const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
+        const name = l.name || l.visitor_id.substring(0, 16) + '...';
 
-      function renderLeads(leads) {
-        const tbody = document.getElementById('leads-body');
-        if (!leads.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lead encontrado</td></tr>';
-          return;
-        }
+        // Contato: email + instagram na mesma célula
+        let contactHtml = '';
+        if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
+        if (l.instagram) contactHtml += `<br><span class="lead-ig">${esc(l.instagram)}</span>`;
+        if (!l.email && !l.instagram && l.phone) contactHtml += `<span class="lead-sub">${esc(l.phone)}</span>`;
+        if (!contactHtml) contactHtml = '<span class="lead-sub">—</span>';
 
-        tbody.innerHTML = leads.map(l => {
-          const srcClass = getSourceClass(l.first_utm_source);
-          const srcLabel = l.first_utm_source || 'direto';
-          const stClass = 'st-' + (l.status || 'visiting');
-          const stLabel = { converted: 'Converteu', identified: 'Identificado', returning: 'Retornando', visiting: 'Visitando' }[l.status] || l.status;
-          const name = l.name || l.visitor_id.substring(0, 16) + '...';
+        // Sub info do lead
+        const sub = l.phone || l.device_type || '';
 
-          // Contato: email + instagram na mesma célula
-          let contactHtml = '';
-          if (l.email) contactHtml += `<span class="lead-sub">${esc(l.email)}</span>`;
-          if (l.instagram) contactHtml += `<br><span class="lead-ig">${esc(l.instagram)}</span>`;
-          if (!l.email && !l.instagram && l.phone) contactHtml += `<span class="lead-sub">${esc(l.phone)}</span>`;
-          if (!contactHtml) contactHtml = '<span class="lead-sub">—</span>';
+        // Meta badge
+        const hasMeta = l.fbclid || l.fbc;
+        const metaHtml = hasMeta
+          ? '<span class="meta-badge has-meta">● Meta</span>'
+          : '<span class="meta-badge no-meta">—</span>';
 
-          // Sub info do lead
-          const sub = l.phone || l.device_type || '';
-
-          // Meta badge
-          const hasMeta = l.fbclid || l.fbc;
-          const metaHtml = hasMeta
-            ? '<span class="meta-badge has-meta">● Meta</span>'
-            : '<span class="meta-badge no-meta">—</span>';
-
-          return `<tr onclick="openJourney('${l.visitor_id}')">
+        return `<tr onclick="openJourney('${l.visitor_id}')">
       <td><span class="lead-name">${esc(name)}</span><br><span class="lead-sub">${esc(sub)}</span></td>
       <td>${contactHtml}</td>
       <td><span class="source-tag ${srcClass}">${esc(srcLabel)}</span></td>
@@ -1118,35 +1123,35 @@
       <td>${l.whatsapp_contacted ? '✅' : '—'}</td>
       <td><span class="status-badge ${stClass}"><span class="status-dot"></span>${stLabel}</span></td>
     </tr>`;
-        }).join('');
+      }).join('');
+    }
+
+    function renderPagination(total, page, limit) {
+      const pages = Math.ceil(total / limit);
+      const el = document.getElementById('pagination');
+      if (pages <= 1) { el.innerHTML = ''; return; }
+
+      let html = '';
+      for (let i = 1; i <= Math.min(pages, 10); i++) {
+        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
       }
+      el.innerHTML = html;
+    }
 
-      function renderPagination(total, page, limit) {
-        const pages = Math.ceil(total / limit);
-        const el = document.getElementById('pagination');
-        if (pages <= 1) { el.innerHTML = ''; return; }
+    // ═══════════════════════════════════════
+    // JOURNEY MODAL
+    // ═══════════════════════════════════════
+    async function openJourney(visitorId) {
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('modal-body').innerHTML = '<div class="loading">Carregando jornada...</div>';
 
-        let html = '';
-        for (let i = 1; i <= Math.min(pages, 10); i++) {
-          html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`;
-        }
-        el.innerHTML = html;
-      }
+      try {
+        const j = await api('/leads/' + encodeURIComponent(visitorId) + '/journey');
+        const v = j.visitor;
 
-      // ═══════════════════════════════════════
-      // JOURNEY MODAL
-      // ═══════════════════════════════════════
-      async function openJourney(visitorId) {
-        document.getElementById('modal').classList.add('open');
-        document.getElementById('modal-body').innerHTML = '<div class="loading">Carregando jornada...</div>';
+        document.getElementById('modal-title').textContent = v.name || v.visitor_id;
 
-        try {
-          const j = await api('/leads/' + encodeURIComponent(visitorId) + '/journey');
-          const v = j.visitor;
-
-          document.getElementById('modal-title').textContent = v.name || v.visitor_id;
-
-          let html = `<div class="lead-info-grid">
+        let html = `<div class="lead-info-grid">
       <div class="info-box"><div class="info-label">Nome</div><div class="info-value">${v.name || '—'}</div></div>
       <div class="info-box"><div class="info-label">Telefone</div><div class="info-value">${v.phone || '—'}</div></div>
       <div class="info-box"><div class="info-label">Email</div><div class="info-value">${v.email || '—'}</div></div>
@@ -1158,48 +1163,48 @@
       <div class="info-box"><div class="info-label">Conversão</div><div class="info-value">${v.converted ? 'R$ ' + Number(v.conversion_value).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '—'}</div></div>
     </div>`;
 
-          // Meta Ads Section (só mostra se tem dados)
-          if (v.fbclid || v.fbc || v.fbp) {
-            html += '<div class="section-title">🔗 Meta Ads Tracking</div>';
-            html += '<div class="lead-info-grid">';
-            if (v.fbclid) html += `<div class="info-box"><div class="info-label">FBCLID</div><div class="info-value meta-link">${v.fbclid.substring(0, 30)}...</div></div>`;
-            if (v.fbc) html += `<div class="info-box"><div class="info-label">FBC (Click ID)</div><div class="info-value meta-link">${v.fbc.substring(0, 30)}...</div></div>`;
-            if (v.fbp) html += `<div class="info-box"><div class="info-label">FBP (Browser ID)</div><div class="info-value meta-link">${v.fbp}</div></div>`;
-            if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-            html += '</div>';
-          }
+        // Meta Ads Section (só mostra se tem dados)
+        if (v.fbclid || v.fbc || v.fbp) {
+          html += '<div class="section-title">🔗 Meta Ads Tracking</div>';
+          html += '<div class="lead-info-grid">';
+          if (v.fbclid) html += `<div class="info-box"><div class="info-label">FBCLID</div><div class="info-value meta-link">${v.fbclid.substring(0, 30)}...</div></div>`;
+          if (v.fbc) html += `<div class="info-box"><div class="info-label">FBC (Click ID)</div><div class="info-value meta-link">${v.fbc.substring(0, 30)}...</div></div>`;
+          if (v.fbp) html += `<div class="info-box"><div class="info-label">FBP (Browser ID)</div><div class="info-value meta-link">${v.fbp}</div></div>`;
+          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
+          html += '</div>';
+        }
 
-          // Localização (só mostra se tem)
-          if (v.city || v.state || v.country || v.zip_code || v.client_ip) {
-            html += '<div class="section-title">📍 Localização e IP</div>';
-            html += '<div class="lead-info-grid">';
-            if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
-            if (v.city) html += `<div class="info-box"><div class="info-label">Cidade</div><div class="info-value">${v.city}</div></div>`;
-            if (v.state) html += `<div class="info-box"><div class="info-label">Estado</div><div class="info-value">${v.state}</div></div>`;
-            if (v.zip_code) html += `<div class="info-box"><div class="info-label">CEP</div><div class="info-value">${v.zip_code}</div></div>`;
-            if (v.country) html += `<div class="info-box"><div class="info-label">País</div><div class="info-value">${v.country}</div></div>`;
-            html += '</div>';
-          }
+        // Localização (só mostra se tem)
+        if (v.city || v.state || v.country || v.zip_code || v.client_ip) {
+          html += '<div class="section-title">📍 Localização e IP</div>';
+          html += '<div class="lead-info-grid">';
+          if (v.client_ip) html += `<div class="info-box"><div class="info-label">IP</div><div class="info-value">${v.client_ip}</div></div>`;
+          if (v.city) html += `<div class="info-box"><div class="info-label">Cidade</div><div class="info-value">${v.city}</div></div>`;
+          if (v.state) html += `<div class="info-box"><div class="info-label">Estado</div><div class="info-value">${v.state}</div></div>`;
+          if (v.zip_code) html += `<div class="info-box"><div class="info-label">CEP</div><div class="info-value">${v.zip_code}</div></div>`;
+          if (v.country) html += `<div class="info-box"><div class="info-label">País</div><div class="info-value">${v.country}</div></div>`;
+          html += '</div>';
+        }
 
-          // Device
-          html += '<div class="section-title">📱 Dispositivo</div>';
-          html += `<div class="lead-info-grid">
+        // Device
+        html += '<div class="section-title">📱 Dispositivo</div>';
+        html += `<div class="lead-info-grid">
       <div class="info-box"><div class="info-label">Tipo</div><div class="info-value">${v.device_type || '—'}</div></div>
       <div class="info-box"><div class="info-label">OS</div><div class="info-value">${v.device_os || '—'}</div></div>
       <div class="info-box"><div class="info-label">Browser</div><div class="info-value">${v.device_browser || '—'}</div></div>
       <div class="info-box"><div class="info-label">Tela</div><div class="info-value">${v.device_screen || '—'}</div></div>
     </div>`;
 
-          // Timeline
-          html += '<div class="section-title">📋 Timeline</div>';
-          const events = j.events.filter(e => e.event_type !== 'heartbeat');
-          html += '<div class="timeline">';
-          events.forEach(e => {
-            const d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data || {});
-            const time = new Date(e.created_at).toLocaleString('pt-BR');
-            const { label, detail } = formatEvent(e.event_type, d, e.page);
+        // Timeline
+        html += '<div class="section-title">📋 Timeline</div>';
+        const events = j.events.filter(e => e.event_type !== 'heartbeat');
+        html += '<div class="timeline">';
+        events.forEach(e => {
+          const d = typeof e.data === 'string' ? JSON.parse(e.data) : (e.data || {});
+          const time = new Date(e.created_at).toLocaleString('pt-BR');
+          const { label, detail } = formatEvent(e.event_type, d, e.page);
 
-            html += `<div class="tl-item tl-${e.event_type}">
+          html += `<div class="tl-item tl-${e.event_type}">
         <div class="tl-dot"></div>
         <div class="tl-content">
           <div class="tl-time">${time}</div>
@@ -1207,236 +1212,284 @@
           ${detail ? `<div class="tl-detail">${detail}</div>` : ''}
         </div>
       </div>`;
-          });
-          html += '</div>';
+        });
+        html += '</div>';
 
-          document.getElementById('modal-body').innerHTML = html;
-        } catch (e) {
-          document.getElementById('modal-body').innerHTML = '<div class="empty-state">Erro ao carregar jornada</div>';
-        }
+        document.getElementById('modal-body').innerHTML = html;
+      } catch (e) {
+        document.getElementById('modal-body').innerHTML = '<div class="empty-state">Erro ao carregar jornada</div>';
       }
+    }
 
-      function closeModal() { document.getElementById('modal').classList.remove('open'); }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
 
-      function formatEvent(type, data, page) {
-        switch (type) {
-          case 'pageview':
-            return { label: `Visitou ${page || '/'}`, detail: data.utm?.source ? `Via ${data.utm.source}` + (data.utm.campaign ? ` (${data.utm.campaign})` : '') : data.referrer ? `Referrer: ${data.referrer}` : 'Tráfego direto' };
-          case 'click':
-            if (data.type === 'whatsapp_click') return { label: '📱 Clicou no WhatsApp', detail: `Número: ${data.phone || '—'}` };
-            if (data.type === 'phone_click') return { label: '📞 Clicou no telefone', detail: data.phone };
-            return { label: `Clicou: ${data.text || data.id || data.tag}`, detail: data.href || '' };
-          case 'scroll': return { label: `Scroll ${data.depth}`, detail: '' };
-          case 'form_submit':
-            const fields = Object.entries(data.fields || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
-            return { label: '📝 Enviou formulário', detail: fields };
-          case 'identify':
-            return { label: '🏷️ Identificado', detail: `${data.name || ''} ${data.email || ''} ${data.phone || ''} ${data.instagram || ''}`.trim() };
-          case 'conversion': return { label: `🎯 CONVERSÃO${data.source ? ' — via ' + data.source : ''}`, detail: data.value ? `R$ ${Number(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` + (data.product ? ` — ${data.product}` : '') : '' };
-          case 'whatsapp_contact':
-            let waDetail = `${data.pushName || ''}: "${(data.message || '').substring(0, 80)}"`;
-            if (data.ctwaClid) waDetail += ' 🔗 Meta Ad';
-            return { label: '💬 Contato via WhatsApp', detail: waDetail };
-          case 'page_exit': return { label: '🚪 Saiu da página', detail: `Tempo: ${data.time_on_page || 0}s` };
-          case 'exit_intent': return { label: '⚠️ Intenção de saída', detail: '' };
-          case 'visibility': return { label: data.state === 'hidden' ? '👁️ Trocou de aba' : '👁️ Voltou à aba', detail: '' };
-          default: return { label: type, detail: JSON.stringify(data).substring(0, 100) };
-        }
+    function formatEvent(type, data, page) {
+      switch (type) {
+        case 'pageview':
+          return { label: `Visitou ${page || '/'}`, detail: data.utm?.source ? `Via ${data.utm.source}` + (data.utm.campaign ? ` (${data.utm.campaign})` : '') : data.referrer ? `Referrer: ${data.referrer}` : 'Tráfego direto' };
+        case 'click':
+          if (data.type === 'whatsapp_click') return { label: '📱 Clicou no WhatsApp', detail: `Número: ${data.phone || '—'}` };
+          if (data.type === 'phone_click') return { label: '📞 Clicou no telefone', detail: data.phone };
+          return { label: `Clicou: ${data.text || data.id || data.tag}`, detail: data.href || '' };
+        case 'scroll': return { label: `Scroll ${data.depth}`, detail: '' };
+        case 'form_submit':
+          const fields = Object.entries(data.fields || {}).map(([k, v]) => `${k}: ${v}`).join(', ');
+          return { label: '📝 Enviou formulário', detail: fields };
+        case 'identify':
+          return { label: '🏷️ Identificado', detail: `${data.name || ''} ${data.email || ''} ${data.phone || ''} ${data.instagram || ''}`.trim() };
+        case 'conversion': return { label: `🎯 CONVERSÃO${data.source ? ' — via ' + data.source : ''}`, detail: data.value ? `R$ ${Number(data.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` + (data.product ? ` — ${data.product}` : '') : '' };
+        case 'whatsapp_contact':
+          let waDetail = `${data.pushName || ''}: "${(data.message || '').substring(0, 80)}"`;
+          if (data.ctwaClid) waDetail += ' 🔗 Meta Ad';
+          return { label: '💬 Contato via WhatsApp', detail: waDetail };
+        case 'page_exit': return { label: '🚪 Saiu da página', detail: `Tempo: ${data.time_on_page || 0}s` };
+        case 'exit_intent': return { label: '⚠️ Intenção de saída', detail: '' };
+        case 'visibility': return { label: data.state === 'hidden' ? '👁️ Trocou de aba' : '👁️ Voltou à aba', detail: '' };
+        default: return { label: type, detail: JSON.stringify(data).substring(0, 100) };
       }
+    }
 
-      // ═══════════════════════════════════════
-      // HELPERS
-      // ═══════════════════════════════════════
-      function getSourceClass(src) {
-        if (!src) return 'src-direct';
-        const s = src.toLowerCase();
-        if (s.includes('instagram')) return 'src-instagram';
-        if (s.includes('facebook') || s.includes('meta') || s.includes('fb')) return 'src-facebook';
-        if (s.includes('google')) return 'src-google';
-        if (s.includes('whatsapp')) return 'src-whatsapp';
-        return 'src-other';
-      }
+    // ═══════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════
+    function getSourceClass(src) {
+      if (!src) return 'src-direct';
+      const s = src.toLowerCase();
+      if (s.includes('instagram')) return 'src-instagram';
+      if (s.includes('facebook') || s.includes('meta') || s.includes('fb')) return 'src-facebook';
+      if (s.includes('google')) return 'src-google';
+      if (s.includes('whatsapp')) return 'src-whatsapp';
+      return 'src-other';
+    }
 
-      function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+    function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
-      function filterStatus(btn) {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentStatus = btn.dataset.status;
-        currentPage = 1;
+    function filterStatus(btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStatus = btn.dataset.status;
+      currentPage = 1;
+      loadLeads();
+    }
+
+    function searchLeads(q) {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => { searchQuery = q; currentPage = 1; loadLeads(); }, 300);
+    }
+
+    function goPage(p) { currentPage = p; loadLeads(); }
+
+    // ═══════════════════════════════════════
+    // TABS
+    // ═══════════════════════════════════════
+    async function switchTab(tab) {
+      document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
+      document.querySelectorAll('.topbar .filter-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (tab === 'hub') {
+        document.getElementById('view-hub').style.display = 'block';
+        document.getElementById('tab-hub').classList.add('active');
+        loadCharts();
+        loadStats();
+      } else {
+        document.getElementById('view-explorer').style.display = 'block';
+        document.getElementById('tab-explorer').classList.add('active');
         loadLeads();
       }
+    }
 
-      function searchLeads(q) {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => { searchQuery = q; currentPage = 1; loadLeads(); }, 300);
-      }
+    // ═══════════════════════════════════════
+    // CHARTS
+    // ═══════════════════════════════════════
+    let charts = {};
 
-      function goPage(p) { currentPage = p; loadLeads(); }
+    async function loadCharts() {
+      try {
+        const data = await api('/graphs');
+        renderFunnelChart(data.funnel);
+        renderGrowthChart(data.timeSeries);
+        renderDeviceChart(data.devices);
+        renderLocationChart(data.locations);
+        renderSourceChart(data.sources);
+      } catch (e) { console.error('Charts error:', e); }
+    }
 
-      // ═══════════════════════════════════════
-      // TABS
-      // ═══════════════════════════════════════
-      async function switchTab(tab) {
-        document.querySelectorAll('.tab-view').forEach(v => v.style.display = 'none');
-        document.getElementById('view-' + tab).style.display = 'block';
+    function renderFunnelChart(f) {
+      if (charts.funnel) charts.funnel.destroy();
+      const ctx = document.getElementById('chart-funnel').getContext('2d');
+      charts.funnel = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Visitantes', 'Identificados', 'Convertidos'],
+          datasets: [{
+            data: [f.total, f.identified, f.converted],
+            backgroundColor: ['rgba(0, 212, 170, 0.2)', 'rgba(0, 212, 170, 0.5)', '#00d4aa'],
+            borderColor: '#00d4aa',
+            borderWidth: 1,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: {
+              grid: { color: '#2a2a3d' },
+              ticks: { color: '#9898b0' },
+              beginAtZero: true
+            },
+            x: { grid: { display: false }, ticks: { color: '#e8e8f0', font: { weight: 'bold' } } }
+          }
+        }
+      });
+    }
 
-        document.getElementById('tab-leads').classList.remove('active');
-        document.getElementById('tab-charts').classList.remove('active');
-        document.getElementById('tab-' + tab).classList.add('active');
+    function renderGrowthChart(ts) {
+      if (charts.growth) charts.growth.destroy();
+      const ctx = document.getElementById('chart-growth').getContext('2d');
 
-        if (tab === 'charts') loadCharts();
-      }
+      const gradientV = ctx.createLinearGradient(0, 0, 0, 400);
+      gradientV.addColorStop(0, 'rgba(0, 212, 170, 0.3)');
+      gradientV.addColorStop(1, 'rgba(0, 212, 170, 0)');
 
-      // ═══════════════════════════════════════
-      // CHARTS
-      // ═══════════════════════════════════════
-      let charts = {};
+      const gradientP = ctx.createLinearGradient(0, 0, 0, 400);
+      gradientP.addColorStop(0, 'rgba(66, 165, 245, 0.2)');
+      gradientP.addColorStop(1, 'rgba(66, 165, 245, 0)');
 
-      async function loadCharts() {
-        try {
-          const data = await api('/graphs');
-          renderFunnelChart(data.funnel);
-          renderGrowthChart(data.timeSeries);
-          renderDeviceChart(data.devices);
-          renderLocationChart(data.locations);
-          renderSourceChart(data.sources);
-        } catch (e) { console.error('Charts error:', e); }
-      }
-
-      function renderFunnelChart(f) {
-        if (charts.funnel) charts.funnel.destroy();
-        const ctx = document.getElementById('chart-funnel').getContext('2d');
-        charts.funnel = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: ['Visitantes', 'Identificados', 'Convertidos'],
-            datasets: [{
-              data: [f.total, f.identified, f.converted],
-              backgroundColor: ['#42a5f5', '#ffa726', '#00d4aa'],
-              borderRadius: 8
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              y: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
-              x: { grid: { display: false }, ticks: { color: '#9898b0' } }
+      charts.growth = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ts.map(d => d.date),
+          datasets: [
+            {
+              label: 'Visitantes',
+              data: ts.map(d => d.new_visitors),
+              borderColor: '#00d4aa',
+              backgroundColor: gradientV,
+              fill: true,
+              tension: 0.4,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointBackgroundColor: '#00d4aa'
+            },
+            {
+              label: 'Pageviews',
+              data: ts.map(d => d.pageviews),
+              borderColor: '#42a5f5',
+              backgroundColor: gradientP,
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointRadius: 0
             }
-          }
-        });
-      }
-
-      function renderGrowthChart(ts) {
-        if (charts.growth) charts.growth.destroy();
-        const ctx = document.getElementById('chart-growth').getContext('2d');
-        charts.growth = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: ts.map(d => d.date),
-            datasets: [
-              {
-                label: 'Pageviews',
-                data: ts.map(d => d.pageviews),
-                borderColor: '#42a5f5',
-                backgroundColor: 'rgba(66,165,245,0.05)',
-                fill: true, tension: 0.4, borderWidth: 2
-              },
-              {
-                label: 'Novos Visitantes',
-                data: ts.map(d => d.new_visitors),
-                borderColor: '#00d4aa',
-                backgroundColor: 'rgba(0,212,170,0.1)',
-                fill: true, tension: 0.4, borderWidth: 3
-              }
-            ]
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { color: '#9898b0', usePointStyle: true } }
           },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'top', labels: { color: '#9898b0' } } },
-            scales: {
-              y: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
-              x: { grid: { display: false }, ticks: { color: '#686880' } }
+          scales: {
+            x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
+            y: { grid: { color: '#2a2a3d', borderDash: [5, 5] }, ticks: { color: '#9898b0' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function renderDeviceChart(devs) {
+      if (charts.devices) charts.devices.destroy();
+      const ctx = document.getElementById('chart-devices').getContext('2d');
+      charts.devices = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: devs.map(d => d.label),
+          datasets: [{
+            data: devs.map(d => d.value),
+            backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc'],
+            borderWidth: 0,
+            hoverOffset: 15
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#9898b0', padding: 20 } }
+          },
+          cutout: '70%'
+        }
+      });
+    }
+
+    function renderLocationChart(locs) {
+      if (charts.locations) charts.locations.destroy();
+      const ctx = document.getElementById('chart-locations').getContext('2d');
+      charts.locations = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: locs.map(l => `${l.city} (${l.state})`),
+          datasets: [{
+            label: 'Visitantes',
+            data: locs.map(l => l.value),
+            backgroundColor: 'rgba(66, 165, 245, 0.5)',
+            borderColor: '#42a5f5',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
+            y: { grid: { display: false }, ticks: { color: '#9898b0' } }
+          }
+        }
+      });
+    }
+
+    function renderSourceChart(srcs) {
+      if (charts.sources) charts.sources.destroy();
+      const ctx = document.getElementById('chart-sources').getContext('2d');
+      charts.sources = new Chart(ctx, {
+        type: 'polarArea',
+        data: {
+          labels: srcs.map(s => s.label),
+          datasets: [{
+            data: srcs.map(s => s.value),
+            backgroundColor: [
+              'rgba(0, 212, 170, 0.6)',
+              'rgba(66, 165, 245, 0.6)',
+              'rgba(255, 167, 38, 0.6)',
+              'rgba(171, 71, 188, 0.6)',
+              'rgba(236, 64, 122, 0.6)'
+            ],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            r: {
+              grid: { color: '#2a2a3d' },
+              ticks: { display: false }
             }
-          }
-        });
-      }
-
-      function renderDeviceChart(devs) {
-        if (charts.devices) charts.devices.destroy();
-        const ctx = document.getElementById('chart-devices').getContext('2d');
-        charts.devices = new Chart(ctx, {
-          type: 'pie',
-          data: {
-            labels: devs.map(d => d.label),
-            datasets: [{
-              data: devs.map(d => d.value),
-              backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc'],
-              borderWidth: 0
-            }]
           },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: '#9898b0' } } }
+          plugins: {
+            legend: { position: 'right', labels: { color: '#9898b0', font: { size: 10 } } }
           }
-        });
-      }
+        }
+      });
+    }
 
-      function renderLocationChart(locs) {
-        if (charts.locations) charts.locations.destroy();
-        const ctx = document.getElementById('chart-locations').getContext('2d');
-        charts.locations = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: locs.map(l => `${l.city} (${l.state})`),
-            datasets: [{
-              label: 'Leads',
-              data: locs.map(l => l.value),
-              backgroundColor: '#42a5f5',
-              borderRadius: 4
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
-              y: { grid: { display: false }, ticks: { color: '#9898b0' } }
-            }
-          }
-        });
-      }
-
-      function renderSourceChart(srcs) {
-        if (charts.sources) charts.sources.destroy();
-        const ctx = document.getElementById('chart-sources').getContext('2d');
-        charts.sources = new Chart(ctx, {
-          type: 'doughnut',
-          data: {
-            labels: srcs.map(s => s.label),
-            datasets: [{
-              data: srcs.map(s => s.value),
-              backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc', '#ec407a', '#26a69a'],
-              borderWidth: 0
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'right', labels: { color: '#9898b0' } } },
-            cutout: '60%'
-          }
-        });
-      }
-
-      // ═══════════════════════════════════════
-      // INIT
-      // ═══════════════════════════════════════
-      loadStats();
-      loadLeads();
-      setInterval(loadStats, 30000);
-    </script>
+    // ═══════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════
+    loadStats();
+    loadLeads();
+    setInterval(loadStats, 30000);
+  </script>
 </body>
 
 </html>
