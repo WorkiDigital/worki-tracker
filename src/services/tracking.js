@@ -1,5 +1,6 @@
 const db = require('../db');
 const metaService = require('./meta');
+const geoService = require('./geo');
 
 const TrackingService = {
 
@@ -87,24 +88,29 @@ const TrackingService = {
       const meta = event.data?.meta || {};
       const server = event._server || {};
 
+      // Consulta Geolocalização
+      const geo = await geoService.lookup(server.ip);
+
       await db.query(
         `INSERT INTO visitors (
           visitor_id, fingerprint, 
           first_utm_source, first_utm_medium, first_utm_campaign, first_referrer, 
           device_type, device_os, device_browser, device_screen,
-          fbclid, fbc, fbp, client_ip, client_user_agent
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          fbclid, fbc, fbp, client_ip, client_user_agent,
+          city, state, country, zip_code
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          ON CONFLICT (visitor_id) DO NOTHING`,
         [
           event.visitor_id, event.fingerprint,
           utm.source, utm.medium, utm.campaign, event.data?.referrer,
           device.type, device.os, device.browser, device.screen,
           meta.fbclid || null, meta.fbc || null, meta.fbp || null,
-          server.ip || null, server.user_agent || null
+          server.ip || null, server.user_agent || null,
+          geo?.city || null, geo?.state || null, geo?.country || null, geo?.zip_code || null
         ]
       );
     } else {
-      // Atualizar campos Meta se ainda não existem
+      // Atualizar campos Meta se ainda não existem + Verificar IP para Geo se mudou
       const meta = event.data?.meta || {};
       const server = event._server || {};
 
@@ -124,6 +130,18 @@ const TrackingService = {
           server.ip || null, server.user_agent || null
         ]
       );
+
+      // Se o visitor existe mas não tem cidade, tenta capturar
+      const v = await db.one('SELECT city, client_ip FROM visitors WHERE visitor_id = $1', [event.visitor_id]);
+      if (!v.city && server.ip) {
+        const geoUpdate = await geoService.lookup(server.ip);
+        if (geoUpdate) {
+          await db.query(
+            'UPDATE visitors SET city = $2, state = $3, country = $4, zip_code = $5 WHERE visitor_id = $1',
+            [event.visitor_id, geoUpdate.city, geoUpdate.state, geoUpdate.country, geoUpdate.zip_code]
+          );
+        }
+      }
     }
   },
 
