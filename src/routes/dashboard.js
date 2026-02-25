@@ -117,4 +117,20 @@ router.get('/graphs', async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════
+// DELETE /api/dashboard/leads
+// Limpar todos os dados (Reset Total)
+// ═══════════════════════════════════════
+router.delete('/leads', async (req, res) => {
+  try {
+    console.log('⚠️ [DASHBOARD] Solicitação de RESET TOTAL de dados iniciada.');
+    const result = await TrackingService.deleteAllLeads();
+    console.log('✅ [DASHBOARD] Dados limpos com sucesso.');
+    res.json(result);
+  } catch (err) {
+    console.error('Erro DELETE /api/dashboard/leads:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 module.exports = router;

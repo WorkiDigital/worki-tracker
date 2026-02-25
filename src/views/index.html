@@ -282,6 +282,15 @@
       background: var(--accent-glow);
     }
 
+    .filter-btn.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .filter-btn.danger:hover {
+      background: rgba(239, 83, 80, 0.1);
+    }
+
     .search-input {
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -890,7 +899,12 @@
     <div id="view-explorer" class="tab-view" style="display:none;">
       <div class="panel">
         <div class="panel-header">
-          <h2>Explorador de Leads</h2>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <h2>Explorador de Leads</h2>
+            <button class="filter-btn danger" onclick="deleteAllData()" style="padding: 4px 8px; font-size: 10px;">
+              🗑️ Limpar Tudo
+            </button>
+          </div>
           <div class="filters">
             <button class="filter-btn active" data-status="all" onclick="filterStatus(this)">Todos</button>
             <button class="filter-btn" data-status="visiting" onclick="filterStatus(this)">Visitando</button>
@@ -1488,6 +1502,29 @@
           }
         }
       });
+    }
+
+    async function deleteAllData() {
+      if (!confirm('🚨 ATENÇÃO: Isso apagará TODOS os leads, visitas, sessões e conversões do sistema. Esta ação é IRREVERSÍVEL.\n\nDeseja prosseguir?')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/leads`, {
+          method: 'DELETE',
+          headers
+        });
+
+        if (res.ok) {
+          alert('✅ Sistema resetado com sucesso.');
+          refreshAll();
+        } else {
+          const err = await res.json();
+          alert('❌ Erro: ' + (err.error || 'Falha ao processar'));
+        }
+      } catch (e) {
+        alert('❌ Erro de conexão');
+      }
     }
 
     // ═══════════════════════════════════════

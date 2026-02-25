@@ -851,6 +851,27 @@ const TrackingService = {
     `, params);
 
     return { timeSeries, devices, sources, funnel, locations };
+  },
+
+  // ═══════════════════════════════════════
+  // DELETAR TODOS OS LEADS (RESET TOTAL)
+  // ═══════════════════════════════════════
+  async deleteAllLeads() {
+    await db.query('BEGIN');
+    try {
+      // Limpa todas as tabelas relacionadas ao rastreamento
+      await db.query('DELETE FROM conversions');
+      await db.query('DELETE FROM whatsapp_messages');
+      await db.query('DELETE FROM events');
+      await db.query('DELETE FROM sessions');
+      await db.query('DELETE FROM visitors');
+
+      await db.query('COMMIT');
+      return { success: true };
+    } catch (err) {
+      await db.query('ROLLBACK');
+      throw err;
+    }
   }
 };
 
