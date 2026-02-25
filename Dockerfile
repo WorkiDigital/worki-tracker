@@ -16,5 +16,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD node -e "const http=require('http');http.get('http://localhost:3000/health',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"
 
-# Rodar migração e depois iniciar
-CMD ["sh", "-c", "node src/migrate.js && node src/index.js"]
+# Rodar migração base + upgrade v2 e depois iniciar
+CMD ["sh", "-c", "node src/migrate.js && node src/migrate-v2.js && node src/index.js"]
