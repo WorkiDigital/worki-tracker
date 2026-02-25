@@ -1,4 +1,5 @@
 const db = require('../db');
+const metaService = require('./meta');
 
 const TrackingService = {
 
@@ -315,6 +316,22 @@ const TrackingService = {
        WHERE visitor_id = $4`,
       [d.value || 0, d.source, daysToConvert, event.visitor_id]
     );
+
+    // Sync with Meta CAPI (CompleteRegistration)
+    try {
+      const visitor = await this.getVisitor(event.visitor_id);
+      await metaService.sendEvent('CompleteRegistration', visitor, {
+        url: event.url,
+        value: d.value,
+        product: d.product
+      });
+    } catch (e) {
+      console.error('[CAPI] Trigger error:', e);
+    }
+  },
+
+  async getVisitor(visitorId) {
+    return db.one('SELECT * FROM visitors WHERE visitor_id = $1', [visitorId]);
   },
 
   // ═══════════════════════════════════════
