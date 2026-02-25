@@ -43,14 +43,14 @@ router.post('/events', async (req, res) => {
 // ═══════════════════════════════════════
 router.post('/match', async (req, res) => {
   try {
-    const { phone, email, instagram, source, value, product, payment, data } = req.body;
+    const { name, phone, email, instagram, source, value, product, payment, data } = req.body;
 
     if (!phone && !email && !instagram) {
       return res.status(400).json({ error: 'Informe phone, email ou instagram para fazer o match' });
     }
 
     const result = await TrackingService.matchConversion({
-      phone, email, instagram, source, value, product, payment, data
+      name, phone, email, instagram, source, value, product, payment, data
     });
 
     res.json(result);

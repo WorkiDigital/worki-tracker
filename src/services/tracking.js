@@ -333,9 +333,9 @@ const TrackingService = {
 
   // ═══════════════════════════════════════
   // MATCH — Vincular conversão externa
-  // Agora suporta match por Instagram
+  // Agora suporta match por Instagram e atualização de Nome
   // ═══════════════════════════════════════
-  async matchConversion({ phone, email, instagram, source, value, product, payment, data }) {
+  async matchConversion({ name, phone, email, instagram, source, value, product, payment, data }) {
     // Normalizar inputs
     const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
     const cleanIG = this.normalizeInstagram(instagram);
@@ -401,9 +401,10 @@ const TrackingService = {
         conversion_date = NOW(),
         days_to_convert = $3,
         status = 'converted',
+        name = COALESCE($4, name),
         updated_at = NOW()
-       WHERE visitor_id = $4`,
-      [value || 0, source, daysToConvert, visitor.visitor_id]
+       WHERE visitor_id = $5`,
+      [value || 0, source, daysToConvert, name || null, visitor.visitor_id]
     );
 
     // Salvar evento na timeline
@@ -482,7 +483,7 @@ const TrackingService = {
         `UPDATE visitors SET 
           whatsapp_contacted = TRUE,
           whatsapp_date = COALESCE(whatsapp_date, NOW()),
-          name = COALESCE(name, $1),
+          name = COALESCE($1, name),
           phone = COALESCE(phone, $2),
           updated_at = NOW()
          WHERE visitor_id = $3`,
