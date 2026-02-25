@@ -936,7 +936,12 @@
       // CONFIG
       // ═══════════════════════════════════════
       const API_BASE = window.location.origin + '/api/dashboard';
-      const API_KEY = prompt('Digite sua API Key:') || '';
+      let API_KEY = localStorage.getItem('wk_api_key');
+
+      if (!API_KEY) {
+        API_KEY = prompt('Digite sua API Key para acessar o dashboard:');
+        if (API_KEY) localStorage.setItem('wk_api_key', API_KEY);
+      }
 
       const headers = { 'X-API-Key': API_KEY, 'Content-Type': 'application/json' };
 
@@ -993,8 +998,12 @@
         const filters = getFilters();
         const query = new URLSearchParams({ ...filters, ...params }).toString();
         const res = await fetch(`/api/dashboard${path}?${query}`, {
-          headers: { 'x-api-key': API_KEY }
+          headers: { 'x-api-key': API_KEY || '' }
         });
+        if (res.status === 401) {
+          localStorage.removeItem('wk_api_key');
+          alert('Sessão expirada ou API Key inválida. Recarregue a página.');
+        }
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
         return res.json();
       }
@@ -1032,23 +1041,30 @@
             ...(searchQuery && { search: searchQuery })
           };
           const data = await api('/leads', params);
-          renderLeads(data.leads);
-          renderPagination(data.total, data.page, data.limit);
+          if (data && data.leads) {
+            renderLeads(data.leads);
+            renderPagination(data.total, data.page, data.limit);
 
-          // Atualizar dropdown de fontes dinamicamente se vazio (exceto as fixas)
-          const sourceSelect = document.getElementById('filter-source');
-          if (sourceSelect.options.length <= 2) { // Only 'Todas as origens' and 'Direto / Sem UTM'
-            const sources = [...new Set(data.leads.map(l => l.first_utm_source).filter(Boolean))];
-            sources.forEach(s => {
-              if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
-                const opt = document.createElement('option');
-                opt.value = opt.textContent = s;
-                sourceSelect.appendChild(opt);
-              }
-            });
+            // Atualizar dropdown de fontes dinamicamente
+            updateSourceFilters(data.leads);
           }
         } catch (e) {
-          document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar. Verifique a API Key.</td></tr>';
+          console.error('Leads error:', e);
+          document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
+        }
+      }
+
+      function updateSourceFilters(leads) {
+        const sourceSelect = document.getElementById('filter-source');
+        if (sourceSelect.options.length <= 2) {
+          const sources = [...new Set(leads.map(l => l.first_utm_source).filter(Boolean))];
+          sources.forEach(s => {
+            if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
+              const opt = document.createElement('option');
+              opt.value = opt.textContent = s;
+              sourceSelect.appendChild(opt);
+            }
+          });
         }
       }
 

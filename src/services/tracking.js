@@ -698,8 +698,8 @@ const TrackingService = {
       )
       SELECT 
         TO_CHAR(days.day, 'DD/MM') as date,
-        (SELECT COUNT(*) FROM visitors v ${where.replace('1=1', 'v.first_seen::date = days.day')}) as new_visitors,
-        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${where.replace('1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
+        (SELECT COUNT(*) FROM visitors v ${graphWhere.replace('v.1=1', 'v.first_seen::date = days.day')}) as new_visitors,
+        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${graphWhere.replace('v.1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
       FROM days
       ORDER BY days.day ASC
     `, [filters.start || null, filters.end || null, ...params]);
@@ -707,20 +707,20 @@ const TrackingService = {
     // 2. Distribuição por Dispositivo
     const devices = await db.many(`
       SELECT 
-        COALESCE(device_type, 'outro') as label,
+        COALESCE(v.device_type, 'outro') as label,
         COUNT(*) as value
-      FROM visitors
+      FROM visitors v
       ${where}
-      GROUP BY device_type
+      GROUP BY v.device_type
       ORDER BY value DESC
     `, params);
 
     // 3. Top Fontes
     const sources = await db.many(`
       SELECT 
-        COALESCE(first_utm_source, 'direto') as label,
+        COALESCE(v.first_utm_source, 'direto') as label,
         COUNT(*) as value
-      FROM visitors
+      FROM visitors v
       ${where}
       GROUP BY label
       ORDER BY value DESC
@@ -733,17 +733,17 @@ const TrackingService = {
         COUNT(*) as total,
         COUNT(*) FILTER (WHERE status NOT IN ('visiting', 'returning')) as identified,
         COUNT(*) FILTER (WHERE converted = TRUE) as converted
-      FROM visitors
+      FROM visitors v
       ${where}
     `, params);
 
     // 5. Localização
     const locations = await db.many(`
       SELECT 
-        COALESCE(city, 'Desconhecido') as city,
-        COALESCE(state, '??') as state,
+        COALESCE(v.city, 'Desconhecido') as city,
+        COALESCE(v.state, '??') as state,
         COUNT(*) as value
-      FROM visitors
+      FROM visitors v
       ${where}
       GROUP BY city, state
       ORDER BY value DESC
