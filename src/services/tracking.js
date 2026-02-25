@@ -58,6 +58,21 @@ const TrackingService = {
   },
 
   // ═══════════════════════════════════════
+  // GET VALUE (Case-Insensitive helper)
+  // ═══════════════════════════════════════
+  getVal(obj, aliases) {
+    if (!obj || typeof obj !== 'object') return null;
+    const keys = Object.keys(obj);
+    for (const alias of aliases) {
+      const foundKey = keys.find(k => k.toLowerCase() === alias.toLowerCase());
+      if (foundKey && obj[foundKey] !== undefined && obj[foundKey] !== null && obj[foundKey] !== '') {
+        return obj[foundKey];
+      }
+    }
+    return null;
+  },
+
+  // ═══════════════════════════════════════
   // NORMALIZAR INSTAGRAM
   // ═══════════════════════════════════════
   normalizeInstagram(value) {
@@ -88,6 +103,11 @@ const TrackingService = {
       const meta = event.data?.meta || {};
       const server = event._server || {};
 
+      // Captura Meta Resiliente (pode vir no meta ou solto no data)
+      const fbclid = meta.fbclid || event.data?.fbclid || null;
+      const fbc = meta.fbc || event.data?.fbc || null;
+      const fbp = meta.fbp || event.data?.fbp || null;
+
       // Consulta Geolocalização
       const geo = await geoService.lookup(server.ip);
 
@@ -104,7 +124,7 @@ const TrackingService = {
           event.visitor_id, event.fingerprint,
           utm.source, utm.medium, utm.campaign, event.data?.referrer,
           device.type, device.os, device.browser, device.screen,
-          meta.fbclid || null, meta.fbc || null, meta.fbp || null,
+          fbclid, fbc, fbp,
           server.ip || null, server.user_agent || null,
           geo?.city || null, geo?.state || null, geo?.country || null, geo?.zip_code || null
         ]
@@ -113,6 +133,11 @@ const TrackingService = {
       // Atualizar campos Meta se ainda não existem + Verificar IP para Geo se mudou
       const meta = event.data?.meta || {};
       const server = event._server || {};
+
+      // Captura Meta Resiliente
+      const fbclid = meta.fbclid || event.data?.fbclid || null;
+      const fbc = meta.fbc || event.data?.fbc || null;
+      const fbp = meta.fbp || event.data?.fbp || null;
 
       await db.query(
         `UPDATE visitors SET 
@@ -126,7 +151,7 @@ const TrackingService = {
          WHERE visitor_id = $1`,
         [
           event.visitor_id,
-          meta.fbclid || null, meta.fbc || null, meta.fbp || null,
+          fbclid, fbc, fbp,
           server.ip || null, server.user_agent || null
         ]
       );
@@ -237,16 +262,16 @@ const TrackingService = {
   async processFormSubmit(event) {
     const fields = event.data?.fields || {};
 
-    const name = fields.nome || fields.name || null;
-    const email = fields.email || fields['e-mail'] || null;
-    const phone = (fields.telefone || fields.phone || fields.tel || fields.whatsapp || fields.celular || '').replace(/\D/g, '') || null;
-    const empresa = fields.empresa || fields.company || null;
-    const instagram = this.normalizeInstagram(
-      fields.instagram || fields.ig || fields['@'] || fields.insta || null
-    );
-    const city = fields.cidade || fields.city || null;
-    const state = fields.estado || fields.state || fields.uf || null;
-    const zip_code = fields.cep || fields.zip || fields.postal_code || fields.zip_code || null;
+    const name = this.getVal(fields, ['nome', 'name', 'first_name', 'p_nome']);
+    const email = this.getVal(fields, ['email', 'e-mail', 'mail', 'p_email']);
+    const phoneVal = this.getVal(fields, ['telefone', 'phone', 'tel', 'whatsapp', 'celular', 'mob', 'p_telefone']);
+    const phone = phoneVal ? String(phoneVal).replace(/\D/g, '') : null;
+    const empresa = this.getVal(fields, ['empresa', 'company', 'org', 'p_empresa']);
+    const instagramVal = this.getVal(fields, ['instagram', 'ig', '@', 'insta', 'perfil', 'p_instagram']);
+    const instagram = this.normalizeInstagram(instagramVal);
+    const city = this.getVal(fields, ['cidade', 'city', 'p_cidade']);
+    const state = this.getVal(fields, ['estado', 'state', 'uf', 'p_estado']);
+    const zip_code = this.getVal(fields, ['cep', 'zip', 'postal_code', 'zip_code', 'p_cep']);
 
     await db.query(
       `UPDATE visitors SET 
@@ -279,7 +304,12 @@ const TrackingService = {
   // ═══════════════════════════════════════
   async processIdentify(event) {
     const d = event.data || {};
-    const instagram = this.normalizeInstagram(d.instagram);
+
+    const name = this.getVal(d, ['nome', 'name', 'first_name']);
+    const email = this.getVal(d, ['email', 'e-mail', 'mail']);
+    const phoneVal = this.getVal(d, ['telefone', 'phone', 'tel', 'whatsapp', 'celular']);
+    const phone = phoneVal ? String(phoneVal).replace(/\D/g, '') : null;
+    const instagram = this.normalizeInstagram(this.getVal(d, ['instagram', 'ig', '@']));
 
     await db.query(
       `UPDATE visitors SET 
@@ -296,8 +326,9 @@ const TrackingService = {
         updated_at = NOW()
        WHERE visitor_id = $10`,
       [
-        d.name, d.email, d.phone?.replace(/\D/g, ''), d.empresa,
-        instagram, d.city, d.state, d.country, d.zip_code || d.cep,
+        name, email, phone, this.getVal(d, ['empresa', 'company']),
+        instagram, this.getVal(d, ['city', 'cidade']), this.getVal(d, ['state', 'estado', 'uf']),
+        this.getVal(d, ['country', 'pais']), this.getVal(d, ['zip_code', 'cep', 'zip']),
         event.visitor_id
       ]
     );
