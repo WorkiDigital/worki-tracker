@@ -113,7 +113,7 @@ router.get('/graphs', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('Erro /dashboard/graphs:', err);
-    res.status(500).json({ error: 'Erro interno' });
+    res.status(500).json({ error: 'Erro interno', message: err.message, stack: err.stack });
   }
 });
 
