@@ -19,7 +19,8 @@ router.use(authMiddleware);
 // ═══════════════════════════════════════
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await TrackingService.getStats();
+    const { start, end, source, device } = req.query;
+    const stats = await TrackingService.getStats({ start, end, source, device });
     res.json(stats);
   } catch (err) {
     console.error('Erro /dashboard/stats:', err);
@@ -33,14 +34,15 @@ router.get('/stats', async (req, res) => {
 // ═══════════════════════════════════════
 router.get('/leads', async (req, res) => {
   try {
-    const { page, limit, status, search, sort, order } = req.query;
+    const { page, limit, status, search, sort, order, start, end, source, device } = req.query;
     const result = await TrackingService.getLeads({
       page: parseInt(page) || 1,
       limit: Math.min(parseInt(limit) || 50, 100),
       status,
       search,
       sort,
-      order
+      order,
+      filters: { start, end, source, device }
     });
     res.json(result);
   } catch (err) {
@@ -106,7 +108,8 @@ router.post('/leads/:visitorId/convert', async (req, res) => {
 // ═══════════════════════════════════════
 router.get('/graphs', async (req, res) => {
   try {
-    const data = await TrackingService.getDashboardGraphs();
+    const { start, end, source, device } = req.query;
+    const data = await TrackingService.getDashboardGraphs({ start, end, source, device });
     res.json(data);
   } catch (err) {
     console.error('Erro /dashboard/graphs:', err);

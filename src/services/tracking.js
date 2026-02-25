@@ -509,7 +509,27 @@ const TrackingService = {
   // ═══════════════════════════════════════
   // CONSULTAS — Dashboard
   // ═══════════════════════════════════════
-  async getStats() {
+  async getStats(filters = {}) {
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (filters.start) {
+      params.push(filters.start);
+      where += ` AND first_seen >= $${params.length}`;
+    }
+    if (filters.end) {
+      params.push(filters.end);
+      where += ` AND first_seen <= $${params.length}`;
+    }
+    if (filters.source) {
+      params.push(filters.source === 'direto' ? null : filters.source);
+      where += filters.source === 'direto' ? ` AND first_utm_source IS NULL` : ` AND first_utm_source = $${params.length}`;
+    }
+    if (filters.device) {
+      params.push(filters.device);
+      where += ` AND device_type = $${params.length}`;
+    }
+
     const stats = await db.one(`
       SELECT
         COUNT(*) as total_visitors,
@@ -522,25 +542,27 @@ const TrackingService = {
           NULLIF(COUNT(*), 0) * 100, 1
         ) as conversion_rate,
         COUNT(*) FILTER (WHERE whatsapp_contacted = TRUE) as whatsapp_contacts,
-        COUNT(*) FILTER (WHERE status = 'identified') as identified_leads,
+        COUNT(*) FILTER (WHERE status NOT IN ('visiting', 'returning')) as identified_leads,
         COUNT(*) FILTER (WHERE instagram IS NOT NULL) as with_instagram,
         COUNT(*) FILTER (WHERE fbclid IS NOT NULL) as from_meta_ads
       FROM visitors
-    `);
+      ${where}
+    `, params);
 
     const weekStats = await db.one(`
       SELECT
         COUNT(*) FILTER (WHERE first_seen > NOW() - INTERVAL '7 days') as new_this_week,
         COUNT(*) FILTER (WHERE first_seen > NOW() - INTERVAL '14 days' AND first_seen <= NOW() - INTERVAL '7 days') as new_last_week
       FROM visitors
-    `);
+      ${where}
+    `, params);
 
     return { ...stats, ...weekStats };
   },
 
-  async getLeads({ page = 1, limit = 50, status, search, sort = 'last_seen', order = 'DESC' }) {
+  async getLeads({ page = 1, limit = 50, status, search, sort = 'last_seen', order = 'DESC', filters = {} }) {
     const offset = (page - 1) * limit;
-    let where = [];
+    let where = ['1=1'];
     let params = [];
     let i = 1;
 
@@ -555,12 +577,34 @@ const TrackingService = {
       i++;
     }
 
-    const whereClause = where.length > 0 ? 'WHERE ' + where.join(' AND ') : '';
+    // Filtros globais
+    if (filters.start) {
+      params.push(filters.start);
+      where.push(`first_seen >= $${i++}`);
+    }
+    if (filters.end) {
+      params.push(filters.end);
+      where.push(`first_seen <= $${i++}`);
+    }
+    if (filters.source) {
+      params.push(filters.source === 'direto' ? null : filters.source);
+      if (filters.source === 'direto') {
+        where.push(`first_utm_source IS NULL`);
+      } else {
+        where.push(`first_utm_source = $${i++}`);
+      }
+    }
+    if (filters.device) {
+      params.push(filters.device);
+      where.push(`device_type = $${i++}`);
+    }
+
+    const whereClause = 'WHERE ' + where.join(' AND ');
     const allowedSorts = ['last_seen', 'first_seen', 'total_visits', 'total_pageviews', 'conversion_value'];
     const safeSort = allowedSorts.includes(sort) ? sort : 'last_seen';
     const safeOrder = order === 'ASC' ? 'ASC' : 'DESC';
 
-    const leads = await db.many(
+    const leads = await db.manyOrNone(
       `SELECT * FROM visitors ${whereClause}
        ORDER BY ${safeSort} ${safeOrder}
        LIMIT $${i++} OFFSET $${i++}`,
@@ -624,46 +668,89 @@ const TrackingService = {
   // ═══════════════════════════════════════
   // NOVOS DADOS PARA GRÁFICOS
   // ═══════════════════════════════════════
-  async getDashboardGraphs() {
-    // 1. TimeSeries: Últimos 15 dias (Pageviews e Novos Visitantes)
-    const timeSeries = await db.many(`
+  async getDashboardGraphs(filters = {}) {
+    let where = 'WHERE 1=1';
+    const params = [];
+
+    if (filters.start) {
+      params.push(filters.start);
+      where += ` AND first_seen >= $${params.length}`;
+    }
+    if (filters.end) {
+      params.push(filters.end);
+      where += ` AND first_seen <= $${params.length}`;
+    }
+    if (filters.source) {
+      params.push(filters.source === 'direto' ? null : filters.source);
+      where += filters.source === 'direto' ? ` AND first_utm_source IS NULL` : ` AND first_utm_source = $${params.length}`;
+    }
+    if (filters.device) {
+      params.push(filters.device);
+      where += ` AND device_type = $${params.length}`;
+    }
+
+    // 1. TimeSeries: Últimos 15 dias (ou Range do Filtro)
+    const timeSeries = await db.manyOrNone(`
       WITH RECURSIVE days AS (
-        SELECT CURRENT_DATE - INTERVAL '14 days' as day
+        SELECT COALESCE($1::date, CURRENT_DATE - INTERVAL '14 days') as day
         UNION ALL
-        SELECT day + INTERVAL '1 day' FROM days WHERE day < CURRENT_DATE
+        SELECT day + INTERVAL '1 day' FROM days WHERE day < COALESCE($2::date, CURRENT_DATE)
       )
       SELECT 
         TO_CHAR(days.day, 'DD/MM') as date,
-        COUNT(v.id) as new_visitors,
-        (SELECT COUNT(*) FROM events e WHERE e.event_type = 'pageview' AND e.created_at::date = days.day) as pageviews
+        (SELECT COUNT(*) FROM visitors v ${where.replace('1=1', 'v.first_seen::date = days.day')}) as new_visitors,
+        (SELECT COUNT(*) FROM events e JOIN visitors v ON v.visitor_id = e.visitor_id ${where.replace('1=1', 'e.event_type = \'pageview\' AND e.created_at::date = days.day')}) as pageviews
       FROM days
-      LEFT JOIN visitors v ON v.first_seen::date = days.day
-      GROUP BY days.day
       ORDER BY days.day ASC
-    `);
+    `, [filters.start || null, filters.end || null, ...params]);
 
     // 2. Distribuição por Dispositivo
-    const devices = await db.many(`
+    const devices = await db.manyOrNone(`
       SELECT 
         COALESCE(device_type, 'outro') as label,
         COUNT(*) as value
       FROM visitors
+      ${where}
       GROUP BY device_type
       ORDER BY value DESC
-    `);
+    `, params);
 
-    // 3. Top Fontes (Formatado para gráfico)
-    const sources = await db.many(`
+    // 3. Top Fontes
+    const sources = await db.manyOrNone(`
       SELECT 
         COALESCE(first_utm_source, 'direto') as label,
         COUNT(*) as value
       FROM visitors
+      ${where}
       GROUP BY label
       ORDER BY value DESC
-      LIMIT 6
-    `);
+      LIMIT 10
+    `, params);
 
-    return { timeSeries, devices, sources };
+    // 4. FUNIL: Visitantes -> Identificados -> Convertidos
+    const funnel = await db.one(`
+      SELECT 
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE status NOT IN ('visiting', 'returning')) as identified,
+        COUNT(*) FILTER (WHERE converted = TRUE) as converted
+      FROM visitors
+      ${where}
+    `, params);
+
+    // 5. Localização
+    const locations = await db.manyOrNone(`
+      SELECT 
+        COALESCE(city, 'Desconhecido') as city,
+        COALESCE(state, '??') as state,
+        COUNT(*) as value
+      FROM visitors
+      ${where}
+      GROUP BY city, state
+      ORDER BY value DESC
+      LIMIT 10
+    `, params);
+
+    return { timeSeries, devices, sources, funnel, locations };
   }
 };
 

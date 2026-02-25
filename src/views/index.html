@@ -47,9 +47,13 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 24px;
-      background: var(--surface);
+      padding: 16px 40px;
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     .topbar h1 {
@@ -84,6 +88,48 @@
       50% {
         opacity: 0.4
       }
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 24px;
+      padding: 12px 40px;
+      background: #0d0d14;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 73px;
+      z-index: 99;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .filter-group label {
+      font-size: 10px;
+      text-transform: uppercase;
+      color: var(--text-3);
+      letter-spacing: 0.05em;
+      font-weight: 700;
+    }
+
+    .filter-group select,
+    .filter-group input {
+      background: #1a1a26;
+      border: 1px solid var(--border);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+    }
+
+    .filter-group select:focus {
+      border-color: var(--accent);
     }
 
     .container {
@@ -724,6 +770,45 @@
     </div>
   </div>
 
+  <!-- Global Filter Bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label>Período</label>
+      <select id="filter-range" onchange="handleRangeChange()">
+        <option value="7d">Últimos 7 dias</option>
+        <option value="15d">Últimos 15 dias</option>
+        <option value="30d" selected>Últimos 30 dias</option>
+        <option value="custom">Personalizado...</option>
+      </select>
+      <div id="custom-range" style="display:none; gap:10px; align-items:center;">
+        <input type="date" id="filter-start" onchange="refreshAll()">
+        <span>até</span>
+        <input type="date" id="filter-end" onchange="refreshAll()">
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <label>Origem</label>
+      <select id="filter-source" onchange="refreshAll()">
+        <option value="">Todas as origens</option>
+        <option value="direto">Direto / Sem UTM</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Dispositivo</label>
+      <select id="filter-device" onchange="refreshAll()">
+        <option value="">Todos</option>
+        <option value="desktop">Desktop</option>
+        <option value="mobile">Mobile</option>
+        <option value="tablet">Tablet</option>
+      </select>
+    </div>
+
+    <button class="filter-btn" onclick="resetFilters()"
+      style="margin-left:auto; background:rgba(255,255,255,0.05);">Limpar Filtros</button>
+  </div>
+
   <div class="container">
     <!-- Stats -->
     <div class="stats-grid" id="stats-grid">
@@ -796,25 +881,39 @@
 
       <!-- Charts View -->
       <div id="view-charts" class="tab-view" style="display:none;">
-        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; margin-bottom:20px;">
           <div class="panel">
             <div class="panel-header">
-              <h2>Crescimento (15 dias)</h2>
+              <h2>Funil de Vendas</h2>
             </div>
-            <div style="padding:20px; height:350px;"><canvas id="chart-growth"></canvas></div>
+            <div style="padding:20px; height:300px;"><canvas id="chart-funnel"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Crescimento de Acessos</h2>
+            </div>
+            <div style="padding:20px; height:300px;"><canvas id="chart-growth"></canvas></div>
           </div>
           <div class="panel">
             <div class="panel-header">
               <h2>Dispositivos</h2>
             </div>
-            <div style="padding:20px; height:350px;"><canvas id="chart-devices"></canvas></div>
+            <div style="padding:20px; height:300px;"><canvas id="chart-devices"></canvas></div>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-header">
-            <h2>Principais Fontes</h2>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Top 10 Cidades / Estados</h2>
+            </div>
+            <div style="padding:20px; height:350px;"><canvas id="chart-locations"></canvas></div>
           </div>
-          <div style="padding:20px; height:300px;"><canvas id="chart-sources"></canvas></div>
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Origens Detalhadas</h2>
+            </div>
+            <div style="padding:20px; height:350px;"><canvas id="chart-sources"></canvas></div>
+          </div>
         </div>
       </div>
     </div>
@@ -827,7 +926,7 @@
           <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
         </div>
         <div class="modal-body" id="modal-body">
-          <div class="loading">Carregando...</div>
+          <div class="loading">Carregando jornada...</div>
         </div>
       </div>
     </div>
@@ -847,16 +946,61 @@
       let searchTimeout = null;
 
       // ═══════════════════════════════════════
-      // FETCH HELPERS
+      // GLOBAL FILTERS
       // ═══════════════════════════════════════
-      async function api(path) {
-        const res = await fetch(API_BASE + path, { headers });
+      function getFilters() {
+        const range = document.getElementById('filter-range').value;
+        let start = document.getElementById('filter-start').value;
+        let end = document.getElementById('filter-end').value;
+
+        if (range !== 'custom') {
+          const d = new Date();
+          end = d.toISOString().split('T')[0];
+          d.setDate(d.getDate() - parseInt(range));
+          start = d.toISOString().split('T')[0];
+        }
+
+        return {
+          start, end,
+          source: document.getElementById('filter-source').value,
+          device: document.getElementById('filter-device').value
+        };
+      }
+
+      function handleRangeChange() {
+        const range = document.getElementById('filter-range').value;
+        document.getElementById('custom-range').style.display = range === 'custom' ? 'flex' : 'none';
+        refreshAll();
+      }
+
+      function resetFilters() {
+        document.getElementById('filter-range').value = '30d';
+        document.getElementById('filter-source').value = '';
+        document.getElementById('filter-device').value = '';
+        handleRangeChange();
+      }
+
+      function refreshAll() {
+        loadStats();
+        loadLeads();
+        if (document.getElementById('view-charts').style.display === 'block') loadCharts();
+      }
+
+      // ═══════════════════════════════════════
+      // API CLIENT
+      // ═══════════════════════════════════════
+      async function api(path, params = {}) {
+        const filters = getFilters();
+        const query = new URLSearchParams({ ...filters, ...params }).toString();
+        const res = await fetch(`/api/dashboard${path}?${query}`, {
+          headers: { 'x-api-key': API_KEY }
+        });
         if (!res.ok) throw new Error(`API Error: ${res.status}`);
         return res.json();
       }
 
       // ═══════════════════════════════════════
-      // LOAD STATS
+      // STATS
       // ═══════════════════════════════════════
       async function loadStats() {
         try {
@@ -878,15 +1022,31 @@
       // LOAD LEADS
       // ═══════════════════════════════════════
       async function loadLeads() {
+        const tbody = document.getElementById('leads-body');
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">Carregando...</td></tr>';
+
         try {
-          const params = new URLSearchParams({
+          const params = {
             page: currentPage, limit: 25,
             ...(currentStatus !== 'all' && { status: currentStatus }),
             ...(searchQuery && { search: searchQuery })
-          });
-          const data = await api('/leads?' + params);
+          };
+          const data = await api('/leads', params);
           renderLeads(data.leads);
           renderPagination(data.total, data.page, data.limit);
+
+          // Atualizar dropdown de fontes dinamicamente se vazio (exceto as fixas)
+          const sourceSelect = document.getElementById('filter-source');
+          if (sourceSelect.options.length <= 2) { // Only 'Todas as origens' and 'Direto / Sem UTM'
+            const sources = [...new Set(data.leads.map(l => l.first_utm_source).filter(Boolean))];
+            sources.forEach(s => {
+              if (!Array.from(sourceSelect.options).some(opt => opt.value === s)) {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = s;
+                sourceSelect.appendChild(opt);
+              }
+            });
+          }
         } catch (e) {
           document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar. Verifique a API Key.</td></tr>';
         }
@@ -1109,10 +1269,36 @@
       async function loadCharts() {
         try {
           const data = await api('/graphs');
+          renderFunnelChart(data.funnel);
           renderGrowthChart(data.timeSeries);
           renderDeviceChart(data.devices);
+          renderLocationChart(data.locations);
           renderSourceChart(data.sources);
         } catch (e) { console.error('Charts error:', e); }
+      }
+
+      function renderFunnelChart(f) {
+        if (charts.funnel) charts.funnel.destroy();
+        const ctx = document.getElementById('chart-funnel').getContext('2d');
+        charts.funnel = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Visitantes', 'Identificados', 'Convertidos'],
+            datasets: [{
+              data: [f.total, f.identified, f.converted],
+              backgroundColor: ['#42a5f5', '#ffa726', '#00d4aa'],
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
+              x: { grid: { display: false }, ticks: { color: '#9898b0' } }
+            }
+          }
+        });
       }
 
       function renderGrowthChart(ts) {
@@ -1124,24 +1310,24 @@
             labels: ts.map(d => d.date),
             datasets: [
               {
+                label: 'Pageviews',
+                data: ts.map(d => d.pageviews),
+                borderColor: '#42a5f5',
+                backgroundColor: 'rgba(66,165,245,0.05)',
+                fill: true, tension: 0.4, borderWidth: 2
+              },
+              {
                 label: 'Novos Visitantes',
                 data: ts.map(d => d.new_visitors),
                 borderColor: '#00d4aa',
                 backgroundColor: 'rgba(0,212,170,0.1)',
                 fill: true, tension: 0.4, borderWidth: 3
-              },
-              {
-                label: 'Pageviews',
-                data: ts.map(d => d.pageviews),
-                borderColor: '#42a5f5',
-                backgroundColor: 'rgba(66,165,245,0.05)',
-                fill: true, tension: 0.4, borderWidth: 2, borderDash: [5, 5]
               }
             ]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: '#9898b0', font: { family: 'DM Sans' } } } },
+            plugins: { legend: { position: 'top', labels: { color: '#9898b0' } } },
             scales: {
               y: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
               x: { grid: { display: false }, ticks: { color: '#686880' } }
@@ -1154,37 +1340,34 @@
         if (charts.devices) charts.devices.destroy();
         const ctx = document.getElementById('chart-devices').getContext('2d');
         charts.devices = new Chart(ctx, {
-          type: 'doughnut',
+          type: 'pie',
           data: {
             labels: devs.map(d => d.label),
             datasets: [{
               data: devs.map(d => d.value),
               backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc'],
-              borderWidth: 0, hoverOffset: 10
+              borderWidth: 0
             }]
           },
           options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: {
-              legend: { position: 'bottom', labels: { color: '#9898b0', padding: 20 } }
-            },
-            cutout: '70%'
+            plugins: { legend: { position: 'right', labels: { color: '#9898b0' } } }
           }
         });
       }
 
-      function renderSourceChart(srcs) {
-        if (charts.sources) charts.sources.destroy();
-        const ctx = document.getElementById('chart-sources').getContext('2d');
-        charts.sources = new Chart(ctx, {
+      function renderLocationChart(locs) {
+        if (charts.locations) charts.locations.destroy();
+        const ctx = document.getElementById('chart-locations').getContext('2d');
+        charts.locations = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: srcs.map(s => s.label),
+            labels: locs.map(l => `${l.city} (${l.state})`),
             datasets: [{
-              label: 'Lead por Origem',
-              data: srcs.map(s => s.value),
-              backgroundColor: '#00d4aa',
-              borderRadius: 6
+              label: 'Leads',
+              data: locs.map(l => l.value),
+              backgroundColor: '#42a5f5',
+              borderRadius: 4
             }]
           },
           options: {
@@ -1195,6 +1378,27 @@
               x: { grid: { color: '#2a2a3d' }, ticks: { color: '#686880' } },
               y: { grid: { display: false }, ticks: { color: '#9898b0' } }
             }
+          }
+        });
+      }
+
+      function renderSourceChart(srcs) {
+        if (charts.sources) charts.sources.destroy();
+        const ctx = document.getElementById('chart-sources').getContext('2d');
+        charts.sources = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: srcs.map(s => s.label),
+            datasets: [{
+              data: srcs.map(s => s.value),
+              backgroundColor: ['#00d4aa', '#42a5f5', '#ffa726', '#ab47bc', '#ec407a', '#26a69a'],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'right', labels: { color: '#9898b0' } } },
+            cutout: '60%'
           }
         });
       }
