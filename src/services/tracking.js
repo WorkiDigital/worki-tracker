@@ -706,8 +706,12 @@ const TrackingService = {
       where += ` AND v.first_seen <= $${params.length}`;
     }
     if (filters.source) {
-      params.push(filters.source === 'direto' ? null : filters.source);
-      where += filters.source === 'direto' ? ` AND v.first_utm_source IS NULL` : ` AND v.first_utm_source = $${params.length}`;
+      if (filters.source === 'direto') {
+        where += ` AND v.first_utm_source IS NULL`;
+      } else {
+        params.push(filters.source);
+        where += ` AND v.first_utm_source = $${params.length}`;
+      }
     }
     if (filters.device) {
       params.push(filters.device);
@@ -717,12 +721,14 @@ const TrackingService = {
     // Compensar índice dos parâmetros para o gráfico de linha ($1 e $2 são start/end)
     const graphWhere = where.replace(/\$(\d+)/g, (match, p1) => `$${parseInt(p1) + 2}`);
 
-    // 1. TimeSeries: Últimos 15 dias (ou Range do Filtro)
+    // 1. TimeSeries: Série de dias usando generate_series
     const timeSeries = await db.many(`
-      WITH RECURSIVE days AS (
-        SELECT COALESCE($1::date, CURRENT_DATE - INTERVAL '14 days') as day
-        UNION ALL
-        SELECT day + INTERVAL '1 day' FROM days WHERE day < COALESCE($2::date, CURRENT_DATE)
+      WITH days AS (
+        SELECT generate_series(
+          COALESCE($1::date, CURRENT_DATE - INTERVAL '14 days'),
+          COALESCE($2::date, CURRENT_DATE),
+          '1 day'
+        )::date as day
       )
       SELECT 
         TO_CHAR(days.day, 'DD/MM') as date,
