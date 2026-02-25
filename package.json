@@ -7,7 +7,8 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "migrate": "node src/migrate.js",
-    "migrate:v2": "node src/migrate-v2.js"
+    "migrate:v2": "node src/migrate-v2.js",
+    "migrate:v3": "node src/migrate-v3.js"
   },
   "dependencies": {
     "express": "^4.18.2",
