@@ -1,7 +1,11 @@
-require('dotenv').config();
+const fs = require('fs');
 const { Pool } = require('pg');
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// Parse .env manually to avoid dependency issues locally
+const env = fs.readFileSync('.env', 'utf8');
+const dbUrl = env.match(/DATABASE_URL=(.+)/)[1].trim();
+
+const pool = new Pool({ connectionString: dbUrl });
 
 const alterations = [
     // Visitors — Adicionando CEP (Zip Code)
