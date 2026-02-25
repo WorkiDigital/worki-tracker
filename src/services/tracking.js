@@ -724,14 +724,15 @@ const TrackingService = {
     // 1. TimeSeries: Série de dias
     const timeSeries = await db.many(`
       WITH days AS (
-        SELECT generate_series(
-          COALESCE($1::date, CURRENT_DATE - INTERVAL '14 days'),
-          COALESCE($2::date, CURRENT_DATE),
-          '1 day'
-        )::date as day
+        SELECT day::date as day 
+        FROM generate_series(
+          COALESCE($1::timestamp, CURRENT_DATE - INTERVAL '14 days'),
+          COALESCE($2::timestamp, CURRENT_DATE),
+          '1 day'::interval
+        ) day
       ),
       daily_visitors AS (
-        SELECT first_seen::date as day, COUNT(*) as count 
+        SELECT v.first_seen::date as day, COUNT(*) as count 
         FROM visitors v 
         ${graphWhere} 
         GROUP BY 1
@@ -740,7 +741,7 @@ const TrackingService = {
         SELECT e.created_at::date as day, COUNT(*) as count 
         FROM events e 
         JOIN visitors v ON v.visitor_id = e.visitor_id
-        ${graphWhere.replace('v.first_seen', 'e.created_at')} 
+        ${graphWhere.replace(/v\.first_seen/g, 'e.created_at')} 
         AND e.event_type = 'pageview'
         GROUP BY 1
       )
