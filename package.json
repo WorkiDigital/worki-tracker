@@ -1,12 +1,13 @@
 {
   "name": "worki-tracker-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Worki Prospect - Lead Journey Tracker Backend",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "migrate": "node src/migrate.js"
+    "migrate": "node src/migrate.js",
+    "migrate:v2": "node src/migrate-v2.js"
   },
   "dependencies": {
     "express": "^4.18.2",

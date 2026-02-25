@@ -18,6 +18,16 @@ router.post('/events', async (req, res) => {
       return res.status(400).json({ error: 'Máximo 50 eventos por request' });
     }
 
+    // Injetar dados server-side (IP e User Agent) em cada evento
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+      || req.headers['x-real-ip']
+      || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    for (const event of events) {
+      event._server = { ip: clientIp, user_agent: userAgent };
+    }
+
     const result = await TrackingService.processEvents(events);
     res.json({ ok: true, ...result });
   } catch (err) {
@@ -29,17 +39,18 @@ router.post('/events', async (req, res) => {
 // ═══════════════════════════════════════
 // POST /api/track/match
 // Vincular conversão externa com visitor
+// Suporta match por phone, email ou instagram
 // ═══════════════════════════════════════
 router.post('/match', async (req, res) => {
   try {
-    const { phone, email, source, value, product, payment, data } = req.body;
+    const { phone, email, instagram, source, value, product, payment, data } = req.body;
 
-    if (!phone && !email) {
-      return res.status(400).json({ error: 'Informe phone ou email para fazer o match' });
+    if (!phone && !email && !instagram) {
+      return res.status(400).json({ error: 'Informe phone, email ou instagram para fazer o match' });
     }
 
     const result = await TrackingService.matchConversion({
-      phone, email, source, value, product, payment, data
+      phone, email, instagram, source, value, product, payment, data
     });
 
     res.json(result);
@@ -50,3 +61,4 @@ router.post('/match', async (req, res) => {
 });
 
 module.exports = router;
+

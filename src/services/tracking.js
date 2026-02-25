@@ -56,6 +56,22 @@ const TrackingService = {
   },
 
   // ═══════════════════════════════════════
+  // NORMALIZAR INSTAGRAM
+  // ═══════════════════════════════════════
+  normalizeInstagram(value) {
+    if (!value) return null;
+    let ig = value.trim();
+    // Remove URL do Instagram se colaram o link completo
+    ig = ig.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '');
+    // Remove @ do início se existir
+    ig = ig.replace(/^@/, '');
+    // Remove barra final e parâmetros
+    ig = ig.replace(/[/?].*$/, '');
+    // Retorna com @ na frente, padronizado
+    return ig ? `@${ig.toLowerCase()}` : null;
+  },
+
+  // ═══════════════════════════════════════
   // UPSERT VISITOR
   // ═══════════════════════════════════════
   async upsertVisitor(event) {
@@ -67,22 +83,45 @@ const TrackingService = {
     if (!existing) {
       const utm = event.data?.utm || {};
       const device = event.data?.device || {};
+      const meta = event.data?.meta || {};
+      const server = event._server || {};
 
       await db.query(
-        `INSERT INTO visitors (visitor_id, fingerprint, first_utm_source, first_utm_medium, 
-         first_utm_campaign, first_referrer, device_type, device_os, device_browser, device_screen)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO visitors (
+          visitor_id, fingerprint, 
+          first_utm_source, first_utm_medium, first_utm_campaign, first_referrer, 
+          device_type, device_os, device_browser, device_screen,
+          fbclid, fbc, fbp, client_ip, client_user_agent
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
          ON CONFLICT (visitor_id) DO NOTHING`,
         [
           event.visitor_id, event.fingerprint,
           utm.source, utm.medium, utm.campaign, event.data?.referrer,
-          device.type, device.os, device.browser, device.screen
+          device.type, device.os, device.browser, device.screen,
+          meta.fbclid || null, meta.fbc || null, meta.fbp || null,
+          server.ip || null, server.user_agent || null
         ]
       );
     } else {
+      // Atualizar campos Meta se ainda não existem
+      const meta = event.data?.meta || {};
+      const server = event._server || {};
+
       await db.query(
-        'UPDATE visitors SET last_seen = NOW(), updated_at = NOW() WHERE visitor_id = $1',
-        [event.visitor_id]
+        `UPDATE visitors SET 
+          last_seen = NOW(), 
+          updated_at = NOW(),
+          fbclid = COALESCE(fbclid, $2),
+          fbc = COALESCE(fbc, $3),
+          fbp = COALESCE(fbp, $4),
+          client_ip = COALESCE($5, client_ip),
+          client_user_agent = COALESCE($6, client_user_agent)
+         WHERE visitor_id = $1`,
+        [
+          event.visitor_id,
+          meta.fbclid || null, meta.fbc || null, meta.fbp || null,
+          server.ip || null, server.user_agent || null
+        ]
       );
     }
   },
@@ -92,17 +131,20 @@ const TrackingService = {
   // ═══════════════════════════════════════
   async processPageview(event) {
     const utm = event.data?.utm || {};
+    const meta = event.data?.meta || {};
 
-    // Upsert session
+    // Upsert session (agora com fbc e fbp)
     await db.query(
       `INSERT INTO sessions (session_id, visitor_id, utm_source, utm_medium, utm_campaign, 
-       utm_term, utm_content, referrer, device_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       utm_term, utm_content, referrer, fbc, fbp, device_type)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        ON CONFLICT (session_id) DO UPDATE SET pageviews = sessions.pageviews + 1`,
       [
         event.session_id, event.visitor_id,
         utm.source, utm.medium, utm.campaign, utm.term, utm.content,
-        event.data?.referrer, event.data?.device?.type
+        event.data?.referrer,
+        meta.fbc || null, meta.fbp || null,
+        event.data?.device?.type
       ]
     );
 
@@ -171,14 +213,20 @@ const TrackingService = {
 
   // ═══════════════════════════════════════
   // PROCESSAR FORM SUBMIT
+  // Agora captura Instagram e localização
   // ═══════════════════════════════════════
   async processFormSubmit(event) {
     const fields = event.data?.fields || {};
 
     const name = fields.nome || fields.name || null;
-    const email = fields.email || null;
+    const email = fields.email || fields['e-mail'] || null;
     const phone = (fields.telefone || fields.phone || fields.tel || fields.whatsapp || fields.celular || '').replace(/\D/g, '') || null;
-    const empresa = fields.empresa || null;
+    const empresa = fields.empresa || fields.company || null;
+    const instagram = this.normalizeInstagram(
+      fields.instagram || fields.ig || fields['@'] || fields.insta || null
+    );
+    const city = fields.cidade || fields.city || null;
+    const state = fields.estado || fields.state || fields.uf || null;
 
     await db.query(
       `UPDATE visitors SET 
@@ -186,28 +234,42 @@ const TrackingService = {
         email = COALESCE($2, email),
         phone = COALESCE($3, phone),
         empresa = COALESCE($4, empresa),
+        instagram = COALESCE($5, instagram),
+        city = COALESCE($6, city),
+        state = COALESCE($7, state),
         status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
         updated_at = NOW()
-       WHERE visitor_id = $5`,
-      [name, email, phone, empresa, event.visitor_id]
+       WHERE visitor_id = $8`,
+      [name, email, phone, empresa, instagram, city, state, event.visitor_id]
     );
   },
 
   // ═══════════════════════════════════════
   // PROCESSAR IDENTIFY
+  // Agora suporta Instagram e localização
   // ═══════════════════════════════════════
   async processIdentify(event) {
     const d = event.data || {};
+    const instagram = this.normalizeInstagram(d.instagram);
+
     await db.query(
       `UPDATE visitors SET 
         name = COALESCE($1, name),
         email = COALESCE($2, email),
         phone = COALESCE($3, phone),
         empresa = COALESCE($4, empresa),
+        instagram = COALESCE($5, instagram),
+        city = COALESCE($6, city),
+        state = COALESCE($7, state),
+        country = COALESCE($8, country),
         status = CASE WHEN status IN ('visiting', 'returning') THEN 'identified' ELSE status END,
         updated_at = NOW()
-       WHERE visitor_id = $5`,
-      [d.name, d.email, d.phone?.replace(/\D/g, ''), d.empresa, event.visitor_id]
+       WHERE visitor_id = $9`,
+      [
+        d.name, d.email, d.phone?.replace(/\D/g, ''), d.empresa,
+        instagram, d.city, d.state, d.country,
+        event.visitor_id
+      ]
     );
   },
 
@@ -271,12 +333,14 @@ const TrackingService = {
 
   // ═══════════════════════════════════════
   // MATCH — Vincular conversão externa
+  // Agora suporta match por Instagram
   // ═══════════════════════════════════════
-  async matchConversion({ phone, email, source, value, product, payment, data }) {
-    // Normalizar telefone
+  async matchConversion({ phone, email, instagram, source, value, product, payment, data }) {
+    // Normalizar inputs
     const cleanPhone = phone ? phone.replace(/\D/g, '') : null;
+    const cleanIG = this.normalizeInstagram(instagram);
 
-    // Buscar visitor por telefone ou email
+    // Buscar visitor por telefone, email ou instagram
     let visitor = null;
 
     if (cleanPhone) {
@@ -290,6 +354,13 @@ const TrackingService = {
       visitor = await db.one(
         'SELECT visitor_id, first_seen FROM visitors WHERE email = $1 ORDER BY last_seen DESC LIMIT 1',
         [email]
+      );
+    }
+
+    if (!visitor && cleanIG) {
+      visitor = await db.one(
+        'SELECT visitor_id, first_seen FROM visitors WHERE instagram = $1 ORDER BY last_seen DESC LIMIT 1',
+        [cleanIG]
       );
     }
 
@@ -308,7 +379,7 @@ const TrackingService = {
     }
 
     if (!visitor) {
-      return { matched: false, reason: 'Nenhum visitante encontrado com esse telefone/email' };
+      return { matched: false, reason: 'Nenhum visitante encontrado com esse telefone/email/instagram' };
     }
 
     // Registrar conversão
@@ -351,6 +422,7 @@ const TrackingService = {
 
   // ═══════════════════════════════════════
   // WEBHOOK WHATSAPP (Evolution API)
+  // Agora captura ctwa_clid para atribuição Meta Ads
   // ═══════════════════════════════════════
   async processWhatsAppWebhook(payload) {
     const data = payload.data || payload;
@@ -367,11 +439,17 @@ const TrackingService = {
       || data.message?.extendedTextMessage?.text
       || '[mídia]';
 
-    // Salvar mensagem
+    // Extrair ctwa_clid (Click-to-WhatsApp Attribution)
+    const ctwaClid = data.contextInfo?.forwardedNewsletterMessageInfo?.ctwaClid
+      || data.contextInfo?.ctwaContext?.sourceUrl?.match?.(/ctwa_clid=([^&]+)/)?.[1]
+      || payload.ctwa_clid
+      || null;
+
+    // Salvar mensagem com ctwa_clid
     await db.query(
-      `INSERT INTO whatsapp_messages (phone, push_name, message, from_me, raw_data)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [phone, pushName, message, fromMe, JSON.stringify(payload)]
+      `INSERT INTO whatsapp_messages (phone, push_name, message, from_me, ctwa_clid, raw_data)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [phone, pushName, message, fromMe, ctwaClid, JSON.stringify(payload)]
     );
 
     // Tentar fazer match com visitor
@@ -415,7 +493,7 @@ const TrackingService = {
       await db.query(
         `INSERT INTO events (visitor_id, event_type, data)
          VALUES ($1, 'whatsapp_contact', $2)`,
-        [visitor.visitor_id, JSON.stringify({ phone, pushName, message: message.substring(0, 200), fromMe })]
+        [visitor.visitor_id, JSON.stringify({ phone, pushName, message: message.substring(0, 200), fromMe, ctwaClid })]
       );
 
       return { processed: true, matched: true, visitor_id: visitor.visitor_id };
@@ -440,7 +518,9 @@ const TrackingService = {
           NULLIF(COUNT(*), 0) * 100, 1
         ) as conversion_rate,
         COUNT(*) FILTER (WHERE whatsapp_contacted = TRUE) as whatsapp_contacts,
-        COUNT(*) FILTER (WHERE status = 'identified') as identified_leads
+        COUNT(*) FILTER (WHERE status = 'identified') as identified_leads,
+        COUNT(*) FILTER (WHERE instagram IS NOT NULL) as with_instagram,
+        COUNT(*) FILTER (WHERE fbclid IS NOT NULL) as from_meta_ads
       FROM visitors
     `);
 
@@ -466,7 +546,7 @@ const TrackingService = {
     }
 
     if (search) {
-      where.push(`(name ILIKE $${i} OR email ILIKE $${i} OR phone ILIKE $${i} OR empresa ILIKE $${i})`);
+      where.push(`(name ILIKE $${i} OR email ILIKE $${i} OR phone ILIKE $${i} OR empresa ILIKE $${i} OR instagram ILIKE $${i})`);
       params.push(`%${search}%`);
       i++;
     }

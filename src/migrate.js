@@ -6,7 +6,8 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const migration = `
 
 -- ═══════════════════════════════════════════
--- WORKI TRACKER — Database Schema
+-- WORKI TRACKER — Database Schema v2.0
+-- Inclui dados Meta Ads, Instagram e localização
 -- ═══════════════════════════════════════════
 
 -- Visitantes únicos
@@ -20,6 +21,19 @@ CREATE TABLE IF NOT EXISTS visitors (
   email VARCHAR(200),
   phone VARCHAR(30),
   empresa VARCHAR(200),
+  instagram VARCHAR(100),
+  
+  -- Meta Ads Tracking (CAPI)
+  fbclid TEXT,
+  fbc TEXT,
+  fbp TEXT,
+  client_ip VARCHAR(50),
+  client_user_agent TEXT,
+  
+  -- Localização (GeoIP / Formulário)
+  city VARCHAR(100),
+  state VARCHAR(50),
+  country VARCHAR(10),
   
   -- Primeira visita
   first_seen TIMESTAMP DEFAULT NOW(),
@@ -92,6 +106,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   utm_content VARCHAR(200),
   referrer TEXT,
   
+  -- Meta Ads
+  fbc TEXT,
+  fbp TEXT,
+  
   device_type VARCHAR(20),
   
   started_at TIMESTAMP DEFAULT NOW(),
@@ -129,6 +147,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
   message TEXT,
   from_me BOOLEAN DEFAULT FALSE,
   
+  -- Click-to-WhatsApp (atribuição Meta Ads)
+  ctwa_clid TEXT,
+  
   -- Dados brutos do webhook
   raw_data JSONB DEFAULT '{}',
   
@@ -146,6 +167,9 @@ CREATE INDEX IF NOT EXISTS idx_visitors_email ON visitors(email);
 CREATE INDEX IF NOT EXISTS idx_visitors_status ON visitors(status);
 CREATE INDEX IF NOT EXISTS idx_visitors_fingerprint ON visitors(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_visitors_last_seen ON visitors(last_seen DESC);
+CREATE INDEX IF NOT EXISTS idx_visitors_instagram ON visitors(instagram);
+CREATE INDEX IF NOT EXISTS idx_visitors_fbc ON visitors(fbc);
+CREATE INDEX IF NOT EXISTS idx_visitors_fbp ON visitors(fbp);
 
 CREATE INDEX IF NOT EXISTS idx_events_visitor_id ON events(visitor_id);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
@@ -159,6 +183,7 @@ CREATE INDEX IF NOT EXISTS idx_conversions_visitor ON conversions(visitor_id);
 
 CREATE INDEX IF NOT EXISTS idx_whatsapp_phone ON whatsapp_messages(phone);
 CREATE INDEX IF NOT EXISTS idx_whatsapp_visitor ON whatsapp_messages(visitor_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_ctwa ON whatsapp_messages(ctwa_clid);
 
 `;
 
