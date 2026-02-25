@@ -291,6 +291,130 @@
       background: rgba(239, 83, 80, 0.1);
     }
 
+    .actions-cell {
+      display: flex;
+      gap: 4px;
+    }
+
+    .action-btn {
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text-3);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .action-btn:hover {
+      border-color: var(--text-2);
+      color: var(--text);
+      background: var(--surface-2);
+    }
+
+    .action-btn.del:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: rgba(239, 83, 80, 0.1);
+    }
+
+    .edit-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1100;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .edit-modal-overlay.open {
+      display: flex;
+    }
+
+    .edit-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 24px;
+      animation: slideUp 0.3s ease;
+    }
+
+    .edit-modal h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: var(--accent);
+    }
+
+    .edit-field {
+      margin-bottom: 12px;
+    }
+
+    .edit-field label {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-3);
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+
+    .edit-field input,
+    .edit-field select {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+    }
+
+    .edit-field input:focus,
+    .edit-field select:focus {
+      border-color: var(--accent);
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .btn-save {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      background: var(--accent);
+      color: var(--bg);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .btn-cancel {
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text-3);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+
     .search-input {
       background: var(--surface-2);
       border: 1px solid var(--border);
@@ -923,11 +1047,12 @@
               <th>Meta</th>
               <th>Última Atividade</th>
               <th>Status</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="leads-body">
             <tr>
-              <td colspan="7" class="loading">Carregando...</td>
+              <td colspan="8" class="loading">Carregando...</td>
             </tr>
           </tbody>
         </table>
@@ -945,6 +1070,47 @@
       </div>
       <div class="modal-body" id="modal-body">
         <div class="loading">Carregando jornada...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Lead Modal -->
+  <div class="edit-modal-overlay" id="edit-modal" onclick="if(event.target===this)closeEditModal()">
+    <div class="edit-modal">
+      <h3>✏️ Editar Lead</h3>
+      <input type="hidden" id="edit-visitor-id">
+      <div class="edit-field">
+        <label>Nome</label>
+        <input type="text" id="edit-name" placeholder="Nome do lead">
+      </div>
+      <div class="edit-field">
+        <label>Email</label>
+        <input type="email" id="edit-email" placeholder="email@exemplo.com">
+      </div>
+      <div class="edit-field">
+        <label>Telefone</label>
+        <input type="text" id="edit-phone" placeholder="11999999999">
+      </div>
+      <div class="edit-field">
+        <label>Empresa</label>
+        <input type="text" id="edit-empresa" placeholder="Nome da empresa">
+      </div>
+      <div class="edit-field">
+        <label>Instagram</label>
+        <input type="text" id="edit-instagram" placeholder="@perfil">
+      </div>
+      <div class="edit-field">
+        <label>Status</label>
+        <select id="edit-status">
+          <option value="visiting">Visitando</option>
+          <option value="returning">Retornando</option>
+          <option value="identified">Identificado</option>
+          <option value="converted">Convertido</option>
+        </select>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveLead()">Salvar</button>
       </div>
     </div>
   </div>
@@ -1080,7 +1246,7 @@
         }
       } catch (e) {
         console.error('Leads error:', e);
-        document.getElementById('leads-body').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
+        document.getElementById('leads-body').innerHTML = '<tr><td colspan="8" class="empty-state">Erro ao carregar dados. Verifique a API Key ou o servidor.</td></tr>';
       }
     }
 
@@ -1101,7 +1267,7 @@
     function renderLeads(leads) {
       const tbody = document.getElementById('leads-body');
       if (!leads.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum lead encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum lead encontrado</td></tr>';
         return;
       }
 
@@ -1143,6 +1309,10 @@
       <td>${metaHtml}</td>
       <td><span class="date-sub">${lStr}</span><br><small>${l.total_pageviews || 0} pgs ${l.whatsapp_contacted ? '• ✅ WA' : ''}</small></td>
       <td><span class="status-badge ${stClass}"><span class="status-dot"></span>${stLabel}</span></td>
+      <td><div class="actions-cell">
+        <button class="action-btn" onclick="event.stopPropagation();editLead('${l.visitor_id}','${esc(l.name || '')}','${esc(l.email || '')}','${esc(l.phone || '')}','${esc(l.empresa || '')}','${esc(l.instagram || '')}','${l.status || 'visiting'}')">✏️</button>
+        <button class="action-btn del" onclick="event.stopPropagation();deleteLead('${l.visitor_id}')">🗑️</button>
+      </div></td>
     </tr>`;
       }).join('');
     }
@@ -1521,6 +1691,76 @@
         } else {
           const err = await res.json();
           alert('❌ Erro: ' + (err.error || 'Falha ao processar'));
+        }
+      } catch (e) {
+        alert('❌ Erro de conexão');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // DELETAR LEAD INDIVIDUAL
+    // ═══════════════════════════════════════
+    async function deleteLead(visitorId) {
+      if (!confirm('Tem certeza que deseja deletar este lead? Esta ação é irreversível.')) return;
+      try {
+        const res = await fetch(`${API_BASE}/leads/${encodeURIComponent(visitorId)}`, {
+          method: 'DELETE',
+          headers
+        });
+        if (res.ok) {
+          loadLeads();
+          loadStats();
+        } else {
+          const err = await res.json();
+          alert('❌ Erro: ' + (err.error || 'Falha ao deletar'));
+        }
+      } catch (e) {
+        alert('❌ Erro de conexão');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // EDITAR LEAD
+    // ═══════════════════════════════════════
+    function editLead(visitorId, name, email, phone, empresa, instagram, status) {
+      document.getElementById('edit-visitor-id').value = visitorId;
+      document.getElementById('edit-name').value = name;
+      document.getElementById('edit-email').value = email;
+      document.getElementById('edit-phone').value = phone;
+      document.getElementById('edit-empresa').value = empresa;
+      document.getElementById('edit-instagram').value = instagram;
+      document.getElementById('edit-status').value = status;
+      document.getElementById('edit-modal').classList.add('open');
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').classList.remove('open');
+    }
+
+    async function saveLead() {
+      const visitorId = document.getElementById('edit-visitor-id').value;
+      const body = {
+        name: document.getElementById('edit-name').value || null,
+        email: document.getElementById('edit-email').value || null,
+        phone: document.getElementById('edit-phone').value || null,
+        empresa: document.getElementById('edit-empresa').value || null,
+        instagram: document.getElementById('edit-instagram').value || null,
+        status: document.getElementById('edit-status').value
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/leads/${encodeURIComponent(visitorId)}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(body)
+        });
+        if (res.ok) {
+          closeEditModal();
+          loadLeads();
+          loadStats();
+        } else {
+          const err = await res.json();
+          alert('❌ Erro: ' + (err.error || 'Falha ao atualizar'));
         }
       } catch (e) {
         alert('❌ Erro de conexão');

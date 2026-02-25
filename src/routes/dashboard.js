@@ -118,6 +118,36 @@ router.get('/graphs', async (req, res) => {
 });
 
 // ═══════════════════════════════════════
+// DELETE /api/dashboard/leads/:visitorId
+// Deletar um lead específico
+// ═══════════════════════════════════════
+router.delete('/leads/:visitorId', async (req, res) => {
+  try {
+    console.log(`🗑️ [DASHBOARD] Deletando lead: ${req.params.visitorId}`);
+    const result = await TrackingService.deleteLead(req.params.visitorId);
+    res.json(result);
+  } catch (err) {
+    console.error('Erro DELETE /api/dashboard/leads/:id:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ═══════════════════════════════════════
+// PUT /api/dashboard/leads/:visitorId
+// Atualizar dados de um lead
+// ═══════════════════════════════════════
+router.put('/leads/:visitorId', async (req, res) => {
+  try {
+    console.log(`✏️ [DASHBOARD] Atualizando lead: ${req.params.visitorId}`);
+    const result = await TrackingService.updateLead(req.params.visitorId, req.body);
+    res.json(result);
+  } catch (err) {
+    console.error('Erro PUT /api/dashboard/leads/:id:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// ═══════════════════════════════════════
 // DELETE /api/dashboard/leads
 // Limpar todos os dados (Reset Total)
 // ═══════════════════════════════════════
@@ -134,3 +164,4 @@ router.delete('/leads', async (req, res) => {
 });
 
 module.exports = router;
+

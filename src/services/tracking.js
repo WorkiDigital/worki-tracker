@@ -854,6 +854,60 @@ const TrackingService = {
   },
 
   // ═══════════════════════════════════════
+  // DELETAR UM LEAD ESPECÍFICO
+  // ═══════════════════════════════════════
+  async deleteLead(visitorId) {
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query('DELETE FROM conversions WHERE visitor_id = $1', [visitorId]);
+      await client.query('DELETE FROM whatsapp_messages WHERE visitor_id = $1', [visitorId]);
+      await client.query('DELETE FROM events WHERE visitor_id = $1', [visitorId]);
+      await client.query('DELETE FROM sessions WHERE visitor_id = $1', [visitorId]);
+      await client.query('DELETE FROM visitors WHERE visitor_id = $1', [visitorId]);
+      await client.query('COMMIT');
+      return { success: true, visitor_id: visitorId };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
+  // ═══════════════════════════════════════
+  // ATUALIZAR UM LEAD
+  // ═══════════════════════════════════════
+  async updateLead(visitorId, data) {
+    const allowed = ['name', 'email', 'phone', 'empresa', 'instagram', 'status'];
+    const sets = [];
+    const params = [];
+    let i = 1;
+
+    for (const key of allowed) {
+      if (data[key] !== undefined) {
+        sets.push(`${key} = $${i++}`);
+        params.push(data[key] || null);
+      }
+    }
+
+    if (sets.length === 0) {
+      return { success: false, reason: 'Nenhum campo válido para atualizar' };
+    }
+
+    sets.push(`updated_at = NOW()`);
+    params.push(visitorId);
+
+    await db.query(
+      `UPDATE visitors SET ${sets.join(', ')} WHERE visitor_id = $${i}`,
+      params
+    );
+
+    const updated = await db.one('SELECT * FROM visitors WHERE visitor_id = $1', [visitorId]);
+    return { success: true, lead: updated };
+  },
+
+  // ═══════════════════════════════════════
   // DELETAR TODOS OS LEADS (RESET TOTAL)
   // ═══════════════════════════════════════
   async deleteAllLeads() {
@@ -861,7 +915,6 @@ const TrackingService = {
     try {
       await client.query('BEGIN');
       await client.query("SET LOCAL statement_timeout = '30s'");
-      // TRUNCATE é muito mais rápido que DELETE para limpar tabelas inteiras
       await client.query('TRUNCATE conversions, whatsapp_messages, events, sessions, visitors CASCADE');
       await client.query('COMMIT');
       return { success: true };
